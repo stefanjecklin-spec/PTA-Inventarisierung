@@ -4,8 +4,6 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -13,12 +11,6 @@ permissions:
 
 jobs:
   pruefen:
-        - name: Dateien auflisten
-        run: |
-          echo "--- Wurzel ---"
-          ls -la
-          echo "--- Alle Dateien ---"
-          find . -path ./.git -prune -o -type f -print | sort
     name: Tests
     runs-on: ubuntu-latest
     steps:
@@ -26,13 +18,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: pip
+      - name: Dateien auflisten
+        run: |
+          echo "--- Wurzel ---"
+          ls -la
+          echo "--- Alle Dateien ---"
+          find . -path ./.git -prune -o -type f -print | sort
       - name: Abhaengigkeiten
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
       - name: Tests ausfuehren
-        run:  run: pytest -rA
+        run: pytest -rA
 
   bauen:
     name: PTA-Inventarisierung.exe
@@ -43,13 +40,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: pip
-
       - name: Abhaengigkeiten
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
-
       - name: Programmdatei erzeugen
         run: >
           pyinstaller --onefile --name PTA-Inventarisierung
@@ -61,17 +55,14 @@ jobs:
           --icon pta/static/icon.ico
           --windowed
           run.py
-
       - name: Kurztest der Programmdatei
         run: dist\PTA-Inventarisierung.exe --version
-
       - name: Ergebnis anhaengen
         uses: actions/upload-artifact@v4
         with:
           name: PTA-Inventarisierung-windows
           path: dist/PTA-Inventarisierung.exe
           retention-days: 90
-
       - name: Veroeffentlichung bei einer Version
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2

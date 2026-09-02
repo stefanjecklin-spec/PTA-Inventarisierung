@@ -1,0 +1,74 @@
+name: Windows-Programm bauen
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pruefen:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Abhaengigkeiten
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+      - name: Tests ausfuehren
+        run: pytest -q
+
+  bauen:
+    name: PTA-Inventarisierung.exe
+    needs: pruefen
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Abhaengigkeiten
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Programmdatei erzeugen
+        run: >
+          pyinstaller --onefile --name PTA-Inventarisierung
+          --add-data "pta/static;static"
+          --collect-submodules pypdf
+          --collect-all pypdfium2
+          --collect-submodules PIL
+          --hidden-import waitress
+          --icon pta/static/icon.ico
+          --windowed
+          run.py
+
+      - name: Kurztest der Programmdatei
+        run: dist\PTA-Inventarisierung.exe --version
+
+      - name: Ergebnis anhaengen
+        uses: actions/upload-artifact@v4
+        with:
+          name: PTA-Inventarisierung-windows
+          path: dist/PTA-Inventarisierung.exe
+          retention-days: 90
+
+      - name: Veroeffentlichung bei einer Version
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/PTA-Inventarisierung.exe
+          generate_release_notes: true

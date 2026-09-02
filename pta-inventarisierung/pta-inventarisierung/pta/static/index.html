@@ -1,0 +1,2748 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PTA Inventarisierung</title>
+<link rel="icon" href="icon.ico" sizes="any">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="application-name" content="PTA Inventarisierung">
+<meta name="theme-color" content="#141C24">
+<style>
+:root{
+  --ground:#E8EBEE; --panel:#FFFFFF; --panel2:#F4F6F8; --panel3:#EDF0F3;
+  --ink:#141C24; --ink2:#4A5560; --ink3:#7C8794;
+  --line:#D6DCE3; --line2:#C2CAD3;
+  --accent:#0B5FA5; --accent-soft:#E3EDF6;
+  --ok:#1E8A57; --ok-soft:#E1F1E9;
+  --warn:#B87200; --warn-soft:#FBF0DC;
+  --bad:#C0392B; --bad-soft:#FAE6E3;
+  --offen:#8892A0;
+  --f1:#1F5FA8; --f2:#D2701A; --f3:#1E8A57; --f4:#7A4A2B;
+  --f5:#6E7A85; --f6:#B9C2CB; --f7:#C0392B; --f8:#2B3138;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"SF Mono","Roboto Mono",monospace;
+  --r:3px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-thumb{background:var(--line2);border:3px solid var(--ground);border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- Grundgerüst ---------- */
+.app{display:grid;grid-template-columns:296px 1fr;grid-template-rows:auto 1fr;height:100vh}
+header.top{
+  grid-column:1/-1;display:flex;align-items:center;gap:14px;
+  padding:0 18px;height:54px;background:var(--ink);color:#fff;
+}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand b{font-size:15px;font-weight:650;letter-spacing:.01em}
+.brand span{font-size:12.5px;color:#9BA7B4}
+.storage{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#9BA7B4;cursor:pointer;border:0;background:none;padding:4px 8px;border-radius:3px}
+.storage:hover{background:#26313C;color:#C7D0D9}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.dot.warn{background:#E0A030}.dot.bad{background:#E2705F}
+
+aside{
+  background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;
+}
+main{overflow:auto;min-height:0;padding:26px 32px 80px}
+
+/* ---------- Knöpfe ---------- */
+.btn{
+  border:1px solid var(--line2);background:var(--panel);color:var(--ink);
+  padding:7px 13px;border-radius:var(--r);font-size:13.5px;font-weight:520;
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+}
+.btn:hover{background:var(--panel3);border-color:#A9B4BF}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.p:hover{background:#094D86;border-color:#094D86}
+.btn.q{border-color:transparent;background:transparent;color:var(--ink2)}
+.btn.q:hover{background:var(--panel3);color:var(--ink)}
+.btn.dark{background:#2C3A47;border-color:#42505E;color:#fff}
+.btn.dark:hover{background:#3A4A59}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+
+/* ---------- Seitenleiste ---------- */
+.side-actions{padding:12px;display:flex;gap:8px;border-bottom:1px solid var(--line)}
+.side-actions .btn{flex:1;justify-content:center}
+.search{padding:10px 12px;border-bottom:1px solid var(--line)}
+.search input{
+  width:100%;padding:7px 10px;border:1px solid var(--line2);border-radius:var(--r);
+  background:var(--panel2);font-size:13.5px;
+}
+.plist{overflow:auto;flex:1;min-height:0;padding:6px 0 14px}
+.pgroup{
+  padding:14px 14px 6px;font-size:11.5px;font-weight:650;color:var(--ink3);
+  letter-spacing:.02em;
+}
+.pcard{
+  display:block;width:100%;text-align:left;border:0;background:none;
+  padding:10px 14px 11px;border-left:3px solid transparent;
+}
+.pcard:hover{background:var(--panel2)}
+.pcard.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.pcard .pj{font:600 13px/1.2 var(--mono);color:var(--accent)}
+.pcard.on .pj{color:#07406F}
+.pcard .nm{font-size:13.5px;font-weight:550;margin:3px 0 6px;line-height:1.3}
+.pcard .meta{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink3)}
+.bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;flex:1}
+.bar i{display:block;height:100%;background:var(--ok)}
+.side-foot{border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px}
+.side-foot .btn{flex:1;justify-content:center}
+
+/* ---------- Erinnerungen ---------- */
+.alert{
+  border:1px solid var(--line2);border-left:3px solid var(--warn);
+  background:var(--warn-soft);padding:12px 14px;border-radius:var(--r);margin-bottom:20px;
+}
+.alert.bad{border-left-color:var(--bad);background:var(--bad-soft)}
+.alert h4{margin:0 0 7px;font-size:13.5px;font-weight:650}
+.alert ul{margin:0;padding-left:17px;font-size:13.5px;color:var(--ink2)}
+.alert li{margin:2px 0}
+.alert li b{font-weight:600;color:var(--ink)}
+.alert a{cursor:pointer;text-decoration:underline}
+
+/* ---------- Projektkopf ---------- */
+.phead{display:flex;align-items:flex-start;gap:18px;margin-bottom:22px}
+.phead .id{
+  font:650 13px/1 var(--mono);color:#fff;background:var(--accent);
+  padding:7px 10px;border-radius:var(--r);margin-top:5px;
+}
+.phead h1{margin:0 0 6px;font-size:25px;font-weight:640;letter-spacing:-.01em;line-height:1.2}
+.phead .sub{font-size:13.5px;color:var(--ink2)}
+.phead .sub b{font-weight:600;color:var(--ink)}
+.phead .right{margin-left:auto;display:flex;gap:8px;align-items:center;flex:none}
+
+.tag{
+  display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600;
+  border:1px solid var(--line2);background:var(--panel2);color:var(--ink2);
+}
+.tag.ok{background:var(--ok-soft);border-color:#9CCDB4;color:#136343}
+.tag.warn{background:var(--warn-soft);border-color:#E0C48A;color:#8A5600}
+.tag.bad{background:var(--bad-soft);border-color:#E5A79E;color:#96291D}
+
+/* Fortschrittsstreifen */
+.progress{display:flex;height:8px;border-radius:2px;overflow:hidden;background:var(--line);margin:0 0 6px}
+.progress i{display:block;height:100%}
+.plegend{display:flex;gap:16px;font-size:12.5px;color:var(--ink2);flex-wrap:wrap}
+.plegend span{display:flex;align-items:center;gap:6px}
+.plegend i{width:9px;height:9px;border-radius:2px;display:block}
+
+/* ---------- Reiter ---------- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line2);margin:22px 0 22px}
+.tab{
+  border:0;background:none;padding:9px 15px;font-size:14px;font-weight:550;color:var(--ink2);
+  border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:8px;
+}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tab .n{
+  font:600 11px/1 var(--mono);background:var(--line);color:var(--ink2);
+  padding:3px 5px;border-radius:8px;
+}
+.tab.on .n{background:var(--accent);color:#fff}
+
+/* ---------- Prüfliste ---------- */
+.group{margin-bottom:26px}
+.group.zu{margin-bottom:10px}
+.group.zieht{opacity:.4}
+.group.ziel .ghead{box-shadow:0 -3px 0 var(--accent)}
+.ghead{display:flex;align-items:center;gap:10px;margin-bottom:9px;
+  padding:3px 4px;border-radius:var(--r)}
+.ghead:hover{background:var(--panel2)}
+.ghead h3{cursor:pointer;user-select:none}
+.griff{cursor:grab;color:var(--ink3);font-size:15px;line-height:1;padding:2px 3px;
+  letter-spacing:-1px}
+.griff:active{cursor:grabbing}
+.gpfeil{border:0;background:none;color:var(--ink3);font-size:12px;padding:2px 4px;
+  border-radius:2px;line-height:1}
+.gpfeil:hover{background:var(--line);color:var(--ink)}
+.gzu{border:0;background:none;color:var(--ink3);font-size:11px;padding:2px 5px}
+.gzu:hover{color:var(--ink)}
+.gbar{width:4px;height:19px;border-radius:1px;flex:none;border:1px solid rgba(0,0,0,.12)}
+.ghead h3{margin:0;font-size:15px;font-weight:640;letter-spacing:-.005em}
+.ghead .cnt{font:500 12px/1 var(--mono);color:var(--ink3);margin-left:auto}
+
+.item{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  margin-bottom:7px;border-left:6px solid var(--line2);
+}
+.item.s-ok{border-left-color:var(--ok)}
+.item.s-nach{border-left-color:var(--bad);background:#FFFCFB}
+.item.s-na{border-left-color:var(--line2);opacity:.72}
+.item.s-offen{border-left-color:var(--offen)}
+.irow{display:flex;align-items:flex-start;gap:14px;padding:11px 13px}
+.ititle{flex:1;min-width:0}
+.ititle .t{font-size:14px;font-weight:550;line-height:1.35}
+.ititle .h{font-size:12.5px;color:var(--ink3);margin-top:3px;line-height:1.4}
+.ititle .h.imp{color:var(--warn);font-weight:550}
+.stats{display:flex;gap:3px;flex:none;background:var(--panel3);padding:3px;border-radius:var(--r)}
+.stats button{
+  border:0;background:none;padding:4px 9px;border-radius:2px;font-size:12.5px;
+  font-weight:550;color:var(--ink2);
+}
+.stats button:hover{background:#fff}
+.stats button.on{background:#fff;box-shadow:0 1px 2px rgba(20,28,36,.14)}
+.stats button.on[data-s="ok"]{color:var(--ok)}
+.stats button.on[data-s="nach"]{color:var(--bad)}
+.stats button.on[data-s="na"]{color:var(--ink3)}
+.stats button.on[data-s="offen"]{color:var(--ink)}
+
+.idetail{padding:0 13px 12px 13px;display:none;gap:12px;flex-wrap:wrap}
+.item.open .idetail{display:flex}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld.grow{flex:1;min-width:240px}
+.fld label{font-size:11.5px;font-weight:600;color:var(--ink3)}
+.fld input,.fld select,.fld textarea{
+  border:1px solid var(--line2);background:var(--panel2);border-radius:var(--r);
+  padding:6px 9px;font-size:13.5px;width:100%;
+}
+.fld textarea{resize:vertical;min-height:34px;line-height:1.45}
+.fld input:focus,.fld textarea:focus,.fld select:focus{background:#fff}
+.imeta{
+  width:100%;font-size:11.5px;color:var(--ink3);display:flex;gap:14px;
+  border-top:1px dashed var(--line);padding-top:8px;flex-wrap:wrap;
+}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+  padding:2px 7px;border-radius:2px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink2);
+}
+.chip.due{background:var(--warn-soft);border-color:#E0C48A;color:#8A5600}
+.chip.over{background:var(--bad-soft);border-color:#E5A79E;color:#96291D}
+.chip.val{font-family:var(--mono);font-weight:500}
+.toggle{border:0;background:none;color:var(--ink3);font-size:12.5px;padding:2px 4px}
+.toggle:hover{color:var(--accent)}
+
+/* ---------- Dokumente ---------- */
+.doc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px}
+.dhead{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.dhead .dn{font-size:14.5px;font-weight:600;flex:1}
+.dbody{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.drop{
+  border:1.5px dashed var(--line2);border-radius:var(--r);padding:16px;text-align:center;
+  background:var(--panel2);color:var(--ink3);font-size:13px;
+}
+.drop.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.drop b{display:block;color:var(--ink);font-size:13.5px;margin-bottom:3px;font-weight:600}
+.fpanel{border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;background:var(--panel2)}
+.fpanel .fn{font-size:13.5px;font-weight:600;word-break:break-all;margin-bottom:6px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px;color:var(--ink2)}
+.kv dt{color:var(--ink3)}
+.kv dd{margin:0;font-family:var(--mono);font-size:12px;word-break:break-all}
+.verdict{padding:11px 13px;border-radius:var(--r);font-size:13.5px;margin-top:10px}
+.verdict.same{background:var(--ok-soft);border:1px solid #9CCDB4;color:#136343}
+.verdict.diff{background:var(--warn-soft);border:1px solid #E0C48A;color:#7A4B00}
+.verdict b{font-weight:650}
+.diffbox{
+  margin-top:10px;border:1px solid var(--line);border-radius:var(--r);background:#fff;
+  max-height:290px;overflow:auto;font:12px/1.55 var(--mono);
+}
+.diffbox div{padding:1px 10px;white-space:pre-wrap;word-break:break-word}
+.diffbox .add{background:#E6F4EC;color:#0F5B3C}
+.diffbox .del{background:#FBE9E7;color:#8F2A1E;text-decoration:line-through;text-decoration-color:#D8A79F}
+.diffbox .ctx{color:var(--ink3)}
+.wahl{display:block;border:1px solid var(--line2);border-radius:var(--r);
+  padding:11px 13px;margin-bottom:9px;cursor:pointer;background:var(--panel2)}
+.wahl:hover{border-color:var(--accent);background:#fff}
+.wahl.on{border-color:var(--accent);background:var(--accent-soft)}
+.wahl.aus{opacity:.5;cursor:not-allowed}
+.wahl b{display:block;font-size:14px;font-weight:600;margin-bottom:3px}
+.wahl span{font-size:12.5px;color:var(--ink2);line-height:1.45}
+.planseite{margin-top:14px}
+.pshead{font-size:13px;font-weight:650;margin-bottom:7px;padding-bottom:5px;
+  border-bottom:1px solid var(--line)}
+/* Übersichtsplan mit Rahmen als Ebene darüber */
+.planwrap{position:relative;display:block;margin-bottom:4px;cursor:zoom-in}
+.planwrap img{width:100%;display:block;border:1px solid var(--line);
+  border-radius:var(--r);background:#fff}
+.rahmen{position:absolute;border:2px solid #C82820;background:rgba(200,40,30,.10);
+  border-radius:2px;cursor:pointer;transition:background .12s}
+.rahmen:hover{background:rgba(200,40,30,.24)}
+.rahmen b{position:absolute;left:-2px;top:-21px;background:#C82820;color:#fff;
+  font:650 11px/1 var(--sans);padding:4px 7px;border-radius:2px;white-space:nowrap}
+.stelle-block{margin-bottom:12px;border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;background:#fff}
+.stelle-kopf{display:flex;align-items:center;gap:10px;padding:7px 11px;
+  background:var(--panel2);border-bottom:1px solid var(--line);font-size:12.5px}
+.stelle-kopf b{font-weight:650}
+.arbeit{border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;background:var(--panel)}
+.arbeit.an{border-color:var(--line2)}
+.akopf{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;font-size:14px}
+.akopf input{width:auto}
+.apruef{margin:0 12px 8px 34px;padding:8px 11px;border-radius:var(--r);font-size:13px;
+  border:1px solid var(--line2);background:var(--panel2)}
+.apruef.ok{background:var(--ok-soft);border-color:#9CCDB4;color:#136343}
+.apruef.warn{background:var(--warn-soft);border-color:#E0C48A;color:#7A4B00}
+.apruef.bad{background:var(--bad-soft);border-color:#E5A79E;color:#96291D}
+.komfeld{border:1px solid var(--line2);background:#fff;border-radius:var(--r);
+  padding:4px 8px;font-size:12.5px;font-family:var(--mono);width:230px}
+.komfeld:focus{border-color:var(--accent);outline:none}
+.stelle-kopf .weg{margin-left:auto}
+.planbild{display:block;cursor:zoom-in;margin-bottom:10px}
+.planbild img{width:100%;display:block;border:1px solid var(--line);
+  border-radius:var(--r);background:#fff}
+.planbild.stelle img{border-color:var(--line2)}
+.planbild:hover img{border-color:var(--accent)}
+.revlist{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:11px}
+.revlist h5{margin:0 0 7px;font-size:12px;font-weight:650;color:var(--ink3)}
+.rev{display:flex;gap:12px;align-items:center;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--panel3)}
+.rev .rt{font-family:var(--mono);font-size:12px;color:var(--ink3);flex:none}
+.rev .rn{flex:1;word-break:break-all}
+
+/* ---------- Verlauf / Tabellen ---------- */
+table.log{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--panel);border:1px solid var(--line)}
+table.log th{
+  text-align:left;font-size:11.5px;font-weight:650;color:var(--ink3);
+  padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel2);
+}
+table.log td{padding:8px 12px;border-bottom:1px solid var(--panel3);vertical-align:top}
+table.log tr:last-child td{border-bottom:0}
+table.log td.t{font-family:var(--mono);font-size:12px;color:var(--ink3);white-space:nowrap}
+
+/* ---------- Leerer Zustand ---------- */
+.empty{max-width:560px;margin:60px auto;text-align:center}
+.empty h2{font-size:22px;font-weight:640;margin:0 0 10px}
+.empty p{color:var(--ink2);font-size:14.5px;margin:0 0 20px;line-height:1.6}
+
+/* ---------- Dialog ---------- */
+dialog{
+  border:1px solid var(--line2);border-radius:5px;padding:0;max-width:640px;width:calc(100% - 32px);
+  box-shadow:0 20px 60px rgba(20,28,36,.28);color:var(--ink);background:var(--panel);
+}
+dialog::backdrop{background:rgba(20,28,36,.42)}
+dialog h3{margin:0;padding:16px 20px;font-size:16.5px;font-weight:640;border-bottom:1px solid var(--line)}
+.dlg-body{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:13px;max-height:66vh;overflow:auto}
+.dlg-body .full{grid-column:1/-1}
+.dlg-foot{padding:13px 20px;border-top:1px solid var(--line);display:flex;gap:9px;justify-content:flex-end;background:var(--panel2)}
+.hint{font-size:12.5px;color:var(--ink3);line-height:1.5}
+
+/* ---------- Meldung ---------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);
+  background:var(--ink);color:#fff;padding:11px 18px;border-radius:var(--r);font-size:13.5px;
+  opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;z-index:99;max-width:90vw;
+}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Druck ---------- */
+@media print{
+  body{background:#fff}
+  .app{display:block;height:auto}
+  header.top,aside,.tabs,.phead .right,.stats,.side-foot,#toast,.no-print{display:none!important}
+  main{overflow:visible;padding:0}
+  .item{break-inside:avoid;border-left-width:6px}
+  .item .idetail{display:flex!important}
+  .group{break-inside:avoid-page}
+  .print-only{display:block!important}
+  a[href]:after{content:""}
+}
+.print-only{display:none}
+.print-head{border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:18px}
+.print-head h1{font-size:19px;margin:0 0 4px}
+.print-sign{margin-top:34px;display:flex;gap:60px}
+.print-sign div{flex:1;border-top:1px solid var(--ink);padding-top:5px;font-size:12px}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  aside{display:none}
+  .dbody{grid-template-columns:1fr}
+  main{padding:18px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand" data-act="uebersicht" style="cursor:pointer"
+         title="Zur Gesamtübersicht">
+      <b>PTA Inventarisierung</b>
+      <span>Prüf- und Abschlusskontrolle FTTH</span>
+    </div>
+    <button class="storage" id="storageInfo" data-ordner="" title="Datenordner öffnen">
+      <span class="dot" id="storageDot"></span><span id="storageText">Verbindung wird geprüft …</span>
+    </button>
+  </header>
+
+  <aside>
+    <div class="side-actions">
+      <button class="btn p" id="btnNew">Neues Projekt</button>
+      <button class="btn" id="btnImport">Archiv laden</button>
+    </div>
+    <div class="search"><input id="q" type="search" placeholder="PJ-Nummer, Location oder Bezeichnung"></div>
+    <div class="plist" id="plist"></div>
+    <div class="side-foot">
+      <button class="btn q sm" id="btnBackupAll">Gesamtsicherung</button>
+      <button class="btn q sm" id="btnAnsicht">Ansicht</button>
+      <button class="btn q sm" id="btnHelp">Anleitung</button>
+    </div>
+  </aside>
+
+  <main id="main"></main>
+</div>
+
+<div id="toast"></div>
+<input type="file" id="fileImport" accept=".json,application/json" hidden>
+
+<!-- Projekt anlegen / bearbeiten -->
+<dialog id="dlgProject">
+  <h3 id="dlgProjectTitle">Neues Projekt anlegen</h3>
+  <div class="dlg-body">
+    <div class="fld"><label for="fPj">PJ-Nummer</label><input id="fPj" placeholder="z. B. PJ-123456"></div>
+    <div class="fld"><label for="fName">Projektbezeichnung</label><input id="fName" placeholder="z. B. Dorfstrasse Etappe 2"></div>
+    <div class="fld"><label for="fOrt">Location</label><input id="fOrt" placeholder="z. B. LOC02hljee"></div>
+    <div class="fld"><label for="fModell">Ausbaumodell</label>
+      <select id="fModell">
+        <option value="">— noch offen —</option>
+        <option>SC-SC-SC</option>
+        <option>SC-SC-LL</option>
+        <option>P2P</option>
+        <option>P2MP</option>
+        <option>FTTB</option>
+        <option>onDemand</option>
+      </select>
+    </div>
+    <div class="fld"><label for="fBearb">Bearbeiter</label><input id="fBearb" placeholder="Name"></div>
+    <div class="fld"><label for="fQm">Quality Manager</label><input id="fQm" placeholder="Name"></div>
+    <div class="fld"><label for="fDue">Termin Abschluss</label><input id="fDue" type="date"></div>
+    <div class="fld"><label for="fOrdner">Projektordner / Ablage</label><input id="fOrdner" placeholder="Pfad oder Link zur Ablage"></div>
+    <div class="fld full"><label for="fNotes">Notizen zum Projekt</label><textarea id="fNotes" rows="2"></textarea></div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn q" data-close="dlgProject">Abbrechen</button>
+    <button class="btn p" id="btnSaveProject">Projekt speichern</button>
+  </div>
+</dialog>
+
+<!-- Eigener Prüfpunkt -->
+<dialog id="dlgItem">
+  <h3>Eigenen Prüfpunkt hinzufügen</h3>
+  <div class="dlg-body">
+    <div class="fld full"><label for="fItemTitle">Prüfpunkt</label><input id="fItemTitle" placeholder="Was ist zu prüfen?"></div>
+    <div class="fld full"><label for="fItemHint">Erläuterung (optional)</label><input id="fItemHint"></div>
+    <div class="fld"><label for="fItemGroup">Gruppe</label><select id="fItemGroup"></select></div>
+    <div class="fld"><label for="fItemValue">Eingabefeld (optional)</label><input id="fItemValue" placeholder="z. B. Anzahl, Länge in m"></div>
+    <div class="fld full"><label for="fItemScope">Gilt für</label>
+      <select id="fItemScope">
+        <option value="alle">Alle Projekte — auch alle künftigen</option>
+        <option value="projekt">Nur dieses Projekt</option>
+      </select></div>
+    <div class="full hint">«Alle Projekte» nimmt den Punkt dauerhaft in deine Prüfliste auf.
+      Er erscheint sofort auch in den bereits offenen Projekten, dort mit dem Stand «offen».</div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn q" data-close="dlgItem">Abbrechen</button>
+    <button class="btn p" id="btnSaveItem">Prüfpunkt hinzufügen</button>
+  </div>
+</dialog>
+
+<!-- Eigenes Dokument -->
+<dialog id="dlgDoc">
+  <h3>Weiteres Dokument aufnehmen</h3>
+  <div class="dlg-body">
+    <div class="fld full"><label for="fDocName">Bezeichnung des Dokuments</label><input id="fDocName" placeholder="z. B. Messprotokoll OTDR"></div>
+    <div class="fld full hint">Das Dokument erscheint anschliessend in der Dokumentenprüfung mit eigenem Original- und Prüfstand.</div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn q" data-close="dlgDoc">Abbrechen</button>
+    <button class="btn p" id="btnSaveDoc">Dokument aufnehmen</button>
+  </div>
+</dialog>
+
+<!-- Arbeitsart -->
+<dialog id="dlgArbeit">
+  <h3 id="dlgArbeitTitel">Arbeitsart</h3>
+  <div class="dlg-body">
+    <div class="fld full"><label for="fArbeitTitel">Bezeichnung</label>
+      <input id="fArbeitTitel" placeholder="z. B. Muffe ersetzen"></div>
+    <div class="full"><label style="font-size:11.5px;font-weight:600;color:var(--ink3)">
+      Objektarten, die dann in der Komponentenliste stehen müssen</label>
+      <div id="fArbeitGruppen" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:7px"></div>
+      <input id="fArbeitGruppeNeu" placeholder="weitere Objektart erfassen und Enter drücken"
+             style="margin-top:9px"></div>
+    <div class="fld full"><label for="fArbeitPruef">Punkte zum Bestätigen — je Zeile einer</label>
+      <textarea id="fArbeitPruef" rows="4"
+        placeholder="Einzugsdatum im PTA gesetzt&#10;Mit dem BEP-Report abgeglichen"></textarea></div>
+    <div class="full hint">Bestätigungspunkte sind für alles gedacht, was die Datei nicht
+      hergibt. Sie erscheinen gelb und werden beim Abschluss aufgezählt, solange sie
+      nicht abgehakt sind.</div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn q danger" id="btnArbeitLoeschen">Löschen</button>
+    <button class="btn q" data-close="dlgArbeit">Abbrechen</button>
+    <button class="btn p" id="btnArbeitSpeichern">Speichern</button>
+  </div>
+</dialog>
+
+<!-- Ansicht -->
+<dialog id="dlgAnsicht">
+  <h3>Einstellungen</h3>
+  <div class="dlg-body">
+    <div class="full" style="font-size:12px;font-weight:650;color:var(--ink3)">ANSICHT</div>
+    <div class="full" id="ansichtWahl"></div>
+    <div class="full hint">Die Änderung gilt ab dem nächsten Start des Programms.</div>
+
+    <div class="full" style="font-size:12px;font-weight:650;color:var(--ink3);
+         border-top:1px solid var(--line);padding-top:14px;margin-top:4px">AKTUALISIERUNG</div>
+    <div class="fld full"><label for="fRepo">GitHub-Verzeichnis</label>
+      <input id="fRepo" placeholder="konto/pta-inventarisierung"></div>
+    <div class="full">
+      <label style="display:flex;gap:8px;align-items:center;font-size:13.5px">
+        <input type="checkbox" id="fUpdatePruefen" style="width:auto">
+        Täglich nachsehen, ob eine neuere Fassung bereitliegt</label></div>
+    <div class="full" id="updateStand"></div>
+    <div class="full"><button class="btn sm" id="btnUpdateJetzt">Jetzt nachsehen</button></div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn q" data-close="dlgAnsicht">Schliessen</button>
+    <button class="btn p" id="btnEinstellungenSpeichern">Speichern</button>
+  </div>
+</dialog>
+
+<!-- Anleitung -->
+<dialog id="dlgHelp">
+  <h3>So arbeitest du mit dem Werkzeug</h3>
+  <div class="dlg-body">
+    <div class="full hint" style="font-size:13.5px;line-height:1.65;color:var(--ink2)">
+      <p style="margin:0 0 12px"><b style="color:var(--ink)">1 — Projekt anlegen.</b> PJ-Nummer, Location, Ausbaumodell und den Termin für den Abschluss erfassen. Die Prüfliste wird automatisch aufgebaut.</p>
+      <p style="margin:0 0 12px"><b style="color:var(--ink)">2 — Prüfliste abarbeiten.</b> Jeder Punkt bekommt einen Stand: offen, in Ordnung, Nacharbeit oder nicht relevant. Bemerkungen, Messwerte und ein Wiedervorlagedatum lassen sich pro Punkt erfassen. Punkte mit Nacharbeit und fällige Wiedervorlagen erscheinen beim Start als Erinnerung. Über «Eigenen Prüfpunkt hinzufügen» erweiterst du die Liste — wahlweise nur für dieses Projekt oder dauerhaft für alle, auch alle künftigen. Dauerhafte Punkte lassen sich am Punkt selbst wieder entfernen. Die Gruppen kannst du am Griff links verschieben oder mit den Pfeilen umordnen, bis die Reihenfolge deinem Kontrollablauf entspricht; ein Klick auf den Gruppentitel klappt sie zu. Beides gilt für alle Projekte und bleibt gespeichert.</p>
+      <p style="margin:0 0 12px"><b style="color:var(--ink)">3 — Originaldokumente einlesen.</b> Unter «Dokumente» ziehst du Spleissreport, BEP-Report, Kabeleinzugsplan und Situationsplan in das Feld «Original». Gespeichert werden Fingerabdruck, Grösse, Seitenzahl, der lesbare Text und eine Kopie der Datei im Datenordner.</p>
+      <p style="margin:0 0 12px"><b style="color:var(--ink)">4 — Später gegenprüfen.</b> Die revidierte Datei ins Feld «Aktueller Stand» ziehen. Das Werkzeug meldet unverändert oder verändert und zeigt bei lesbarem Text die geänderten Zeilen. Bei Plänen ohne Textebene — die meisten Situations- und Kabeleinzugspläne sind reine Bilder — vergleicht es die Seiten stattdessen Bildpunkt für Bildpunkt und umrahmt die geänderten Stellen im Übersichtsplan; darunter steht jede Stelle vergrössert als Vorher-Nachher. Stellen, die dich nicht betreffen, blendest du mit «nicht relevant» aus — dann verschwindet auch ihr Rahmen aus der Übersicht. Jede Prüfung landet im Revisionsverlauf.</p>
+      <p style="margin:0 0 12px"><b style="color:var(--ink)">5 — Abschliessen.</b> «Projekt abschliessen» prüft, ob noch Punkte offen sind. Über «Protokoll drucken» entsteht das Prüfprotokoll für den Quality Manager.</p>
+      <p style="margin:0 0 6px"><b style="color:var(--ink)">Sicherung.</b> Alles liegt im Datenordner auf diesem Rechner — oben rechts steht, wo. Das Programm legt bei jedem Arbeitstag automatisch eine Kopie unter <i>sicherungen</i> ab und behält die letzten 30. Zusätzlich kannst du pro Projekt über «Archiv sichern» eine Datei in deinen eigenen Projektordner legen.</p>
+    </div>
+  </div>
+  <div class="dlg-foot"><button class="btn p" data-close="dlgHelp">Verstanden</button></div>
+</dialog>
+<script>
+"use strict";
+
+/* ============================================================
+   1 — Prüfkatalog
+   ============================================================ */
+const GROUPS = [
+  {id:'g1', t:'Ausbaumodell und OTO',            c:'var(--f1)'},
+  {id:'g2', t:'Verteilgehäuse und Spleissung',   c:'var(--f2)'},
+  {id:'g3', t:'Kabel',                            c:'var(--f3)'},
+  {id:'g4', t:'Rohre und Hauseinführung',        c:'var(--f4)'},
+  {id:'g5', t:'Erdstrecken und Lage',            c:'var(--f5)'},
+  {id:'g6', t:'Schächte',                         c:'var(--f6)'},
+  {id:'g7', t:'Inbetriebnahme',                   c:'var(--f7)'},
+  {id:'g8', t:'Dokumente und Abschluss',          c:'var(--f8)'}
+];
+
+const CHECKS = [
+  {id:'c01', g:'g1', t:'Ausbaumodell SC-SC-SC — OTO muss nicht ausgebaut werden',
+   h:'Bestätigen, dass für dieses Modell kein OTO-Ausbau nötig ist.'},
+  {id:'c02', g:'g1', t:'Ausbaumodell SC-SC-LL — OTO bereits ausgebaut?',
+   val:{label:'OTO ausgebaut', opts:['Ja','Nein']}},
+  {id:'c03', g:'g1', t:'Nutzung und OTO-IDs vollständig und korrekt',
+   h:'Alle OTO-IDs vergeben, Nutzung sauber zugeordnet.'},
+
+  {id:'c04', g:'g2', t:'Verteilgehäuse stimmt',
+   h:'Typ, Standort und Bezeichnung gegen die Planung prüfen.'},
+  {id:'c05', g:'g2', t:'LWL-Kabelspleiss im Verteilgehäuse — Anzahl SPL stimmt',
+   val:{label:'Anzahl SPL'}},
+  {id:'c06', g:'g2', t:'Muffentyp stimmt und Stutzenbelegung stimmt',
+   val:{label:'Muffentyp'}},
+
+  {id:'c07', g:'g3', t:'Kabel geprüft — Kabelbereich stimmt',
+   val:{label:'Bereich', opts:['Drop','Feeder','Drop und Feeder']}},
+  {id:'c08', g:'g3', t:'Mehrlänge vom Kabel geprüft und angegeben',
+   val:{label:'Mehrlänge in m'}},
+  {id:'c09', g:'g3', t:'Alle Kabel liegen in den Rohren, nicht daneben'},
+
+  {id:'c10', g:'g4', t:'Hauseinführung geprüft — Rohre sind verbunden'},
+  {id:'c11', g:'g4', t:'Rohre in den Schächten getrennt geführt'},
+
+  {id:'c12', g:'g5', t:'Alle Erdstrecken geprüft — Ki, Hausanschluss oder Kanal',
+   val:{label:'Bemerkung Zuordnung'}},
+  {id:'c13', g:'g5', t:'Lagegenauigkeit aller Objekte und Erdstrecken geprüft'},
+  {id:'c14', g:'g5', t:'Einmasse oder GPS-Daten vorhanden',
+   h:'Ladeprotokoll nicht vergessen zu löschen.', imp:true,
+   val:{label:'Erfassungsart', opts:['Einmasse','GPS-Daten','Beides']}},
+
+  {id:'c15', g:'g6', t:'Schachtgrösse stimmt — fehlende Angaben ergänzt',
+   val:{label:'Schachtgrösse'}},
+  {id:'c16', g:'g6', t:'Schachtabdeckung stimmt',
+   val:{label:'Abdeckung', opts:['sichtbar','überdeckt']}},
+
+  {id:'c17', g:'g7', t:'Inbetriebnahme geprüft',
+   h:'BEP, LWL-Kabelspleiss, Rohre und Schächte in Betrieb gemeldet.'},
+
+  {id:'c18', g:'g8', t:'Situationen angepasst, wenn es Änderungen gab',
+   h:'Spleissreport, BEP-Report, Kabeleinzugsplan, Situationsplan.'},
+  {id:'c19', g:'g8', t:'Schlussprüfung mit dem Quality Manager durchgeführt'}
+];
+
+const DEFAULT_DOCS = ['Spleissreport','BEP-Report','Kabeleinzugsplan','Situationsplan'];
+
+/* Fassung dieser Oberfläche. DIENST_FASSUNG wird beim Ausliefern vom Programm
+   eingesetzt; bleibt der Platzhalter stehen, sind die Programmdateien älter. */
+const OBERFLAECHE_FASSUNG = '1.13.0';
+const DIENST_FASSUNG = '__FASSUNG__';
+const STATUS = {offen:'offen', ok:'i.O.', nach:'Nacharbeit', na:'n/a'};
+
+/* ============================================================
+   2 — Speicher: lokaler Dienst (Python)
+   ============================================================ */
+let letzteSicherung = true;
+
+const Store = (() => {
+  let ordner = '', sicherungen = 0;
+
+  async function init(){ return 'server'; }
+
+  async function load(){
+    const r = await fetch('api/zustand');
+    if(!r.ok) throw new Error('Dienst antwortet nicht');
+    const d = await r.json();
+    if(d._ablage){ ordner = d._ablage.ordner; sicherungen = d._ablage.sicherungen; delete d._ablage; }
+    return d;
+  }
+
+  async function save(data){
+    try{
+      const r = await fetch('api/zustand', {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      return r.ok;
+    }catch(e){ return false; }
+  }
+
+  return {init, load, save, mode:'server',
+          get ordner(){ return ordner; }, get sicherungen(){ return sicherungen; }};
+})();
+
+/* ============================================================
+   3 — Zustand
+   ============================================================ */
+let DB  = {projects:[], katalog:[], gruppen:null, v:1};
+// katalog: eigene Punkte für alle Projekte
+// gruppen: {reihenfolge:[...], zu:[...]} — eigener Prüfablauf, gilt überall
+let cur = null;       // aktive Projekt-ID
+let tab = 'liste';
+let openItems = {};   // aufgeklappte Prüfpunkte
+
+const $  = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2,10);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date().toISOString().slice(0,10);
+const nowIso = () => new Date().toISOString();
+
+function fmtDate(d){
+  if(!d) return '—';
+  const x = new Date(d);
+  if(isNaN(x)) return '—';
+  return x.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function fmtDT(d){
+  if(!d) return '—';
+  const x = new Date(d);
+  if(isNaN(x)) return '—';
+  return x.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' +
+         x.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtSize(b){
+  if(b == null) return '—';
+  if(b < 1024) return b + ' B';
+  if(b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+function daysTo(d){
+  if(!d) return null;
+  const a = new Date(today()+'T00:00:00'), b = new Date(d+'T00:00:00');
+  return Math.round((b-a)/86400000);
+}
+
+let saveTimer = null;
+function persist(immediate){
+  clearTimeout(saveTimer);
+  const go = async () => {
+    const ok = await Store.save(DB);
+    if(ok !== letzteSicherung){ letzteSicherung = ok; setStorageBadge(); }
+    if(!ok) toast('Speichern fehlgeschlagen — läuft das Programmfenster noch?');
+  };
+  if(immediate) go(); else saveTimer = setTimeout(go, 400);
+}
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('on'), 2600);
+}
+
+function proj(id){ return DB.projects.find(p => p.id === (id||cur)); }
+function touch(p, text){
+  p.updatedAt = nowIso();
+  if(text) p.log.unshift({ts:nowIso(), text});
+  if(p.log.length > 400) p.log.length = 400;
+}
+
+/* ============================================================
+   4 — Projekt-Hilfsfunktionen
+   ============================================================ */
+/* ---------- Eigener Prüfablauf: Reihenfolge und zugeklappte Gruppen ---------- */
+function gruppenStand(){
+  if(!DB.gruppen) DB.gruppen = {reihenfolge:[], zu:[]};
+  DB.gruppen.reihenfolge = DB.gruppen.reihenfolge || [];
+  DB.gruppen.zu = DB.gruppen.zu || [];
+  return DB.gruppen;
+}
+
+/** Gruppen in der vom Benutzer gewählten Reihenfolge. */
+function gruppenListe(){
+  const g = gruppenStand();
+  const bekannt = GROUPS.slice();
+  const sortiert = [];
+  g.reihenfolge.forEach(id => {
+    const treffer = bekannt.find(x => x.id === id);
+    if(treffer && !sortiert.includes(treffer)) sortiert.push(treffer);
+  });
+  bekannt.forEach(x => { if(!sortiert.includes(x)) sortiert.push(x); });
+  return sortiert;
+}
+
+function gruppeZu(id){ return gruppenStand().zu.includes(id); }
+
+function gruppeKlappen(id){
+  const g = gruppenStand();
+  g.zu = g.zu.includes(id) ? g.zu.filter(x => x !== id) : g.zu.concat(id);
+  persist(); renderProject();
+}
+
+function gruppeSchieben(id, richtung){
+  const liste = gruppenListe().map(x => x.id);
+  const i = liste.indexOf(id);
+  const j = i + richtung;
+  if(i < 0 || j < 0 || j >= liste.length) return;
+  liste.splice(j, 0, liste.splice(i, 1)[0]);
+  gruppenStand().reihenfolge = liste;
+  persist(); renderProject();
+}
+
+function gruppeAblegen(gezogen, ziel){
+  if(gezogen === ziel) return;
+  const liste = gruppenListe().map(x => x.id);
+  const i = liste.indexOf(gezogen), j = liste.indexOf(ziel);
+  if(i < 0 || j < 0) return;
+  liste.splice(i, 1);
+  liste.splice(liste.indexOf(ziel) + (j > i ? 1 : 0), 0, gezogen);
+  gruppenStand().reihenfolge = liste;
+  persist(); renderProject();
+}
+
+function gruppenZuruecksetzen(){
+  DB.gruppen = {reihenfolge:[], zu:[]};
+  persist(); renderProject();
+  toast('Reihenfolge zurückgesetzt');
+}
+
+function allChecks(p){
+  // Standardpunkte, danach die dauerhaft eigenen, zuletzt die nur hier gültigen
+  return CHECKS.concat(DB.katalog || [], p.extra || []);
+}
+function counts(p){
+  const c = {offen:0, ok:0, nach:0, na:0, total:0};
+  allChecks(p).forEach(ch => {
+    const it = p.items[ch.id] || {};
+    const s = it.status || 'offen';
+    c[s]++; c.total++;
+  });
+  return c;
+}
+function pctDone(p){
+  const c = counts(p);
+  return c.total ? Math.round((c.ok + c.na) / c.total * 100) : 0;
+}
+
+/** Offene Erinnerungen eines Projekts. */
+function alerts(p){
+  const out = {due:[], overdue:[], nach:[], offen:0};
+  allChecks(p).forEach(ch => {
+    const it = p.items[ch.id] || {};
+    const s = it.status || 'offen';
+    if(s === 'offen') out.offen++;
+    if(s === 'nach') out.nach.push(ch);
+    if(it.followUp && !it.followUpDone){
+      const d = daysTo(it.followUp);
+      if(d !== null && d < 0) out.overdue.push({ch, date:it.followUp, d});
+      else if(d !== null && d <= 7) out.due.push({ch, date:it.followUp, d});
+    }
+  });
+  return out;
+}
+
+function newProject(f){
+  return {
+    id: uid(), pj:f.pj, name:f.name, ort:f.ort, modell:f.modell,
+    bearb:f.bearb, qm:f.qm, due:f.due, ordner:f.ordner, notes:f.notes,
+    status:'offen', createdAt:nowIso(), updatedAt:nowIso(),
+    items:{}, extra:[],
+    docs: DEFAULT_DOCS.map(n => ({id:uid(), name:n, ref:null, revisions:[], last:null})),
+    log:[{ts:nowIso(), text:'Projekt angelegt'}]
+  };
+}
+
+/* ============================================================
+   6 — Oberfläche: Seitenleiste
+   ============================================================ */
+function kurzPfad(p){
+  if(!p) return '';
+  return p.length > 36 ? '…' + p.slice(-35) : p;
+}
+function setStorageBadge(){
+  $('#storageText').textContent = letzteSicherung
+    ? kurzPfad(Store.ordner) : 'Nicht gespeichert!';
+  $('#storageDot').className = 'dot' + (letzteSicherung ? '' : ' bad');
+  $('#storageInfo').title = letzteSicherung
+    ? `Datenordner: ${Store.ordner}\n${Store.sicherungen} Tagessicherungen\nKlicken, um den Ordner zu öffnen`
+    : 'Der lokale Dienst antwortet nicht. Läuft das Programmfenster noch?';
+}
+
+function renderSide(){
+  const q = ($('#q').value || '').toLowerCase().trim();
+  const list = DB.projects
+    .filter(p => !q || [p.pj,p.name,p.ort,p.modell].join(' ').toLowerCase().includes(q))
+    .sort((a,b) => (a.status === 'abgeschlossen') - (b.status === 'abgeschlossen')
+                 || new Date(b.updatedAt) - new Date(a.updatedAt));
+
+  if(!list.length){
+    $('#plist').innerHTML = '<div style="padding:24px 16px;color:var(--ink3);font-size:13px;line-height:1.5">'
+      + (DB.projects.length ? 'Keine Treffer.' : 'Noch keine Projekte erfasst.') + '</div>';
+    return;
+  }
+  const open = list.filter(p => p.status !== 'abgeschlossen');
+  const done = list.filter(p => p.status === 'abgeschlossen');
+  let h = '';
+  if(open.length) h += '<div class="pgroup">In Bearbeitung</div>' + open.map(card).join('');
+  if(done.length) h += '<div class="pgroup">Abgeschlossen</div>' + done.map(card).join('');
+  $('#plist').innerHTML = h;
+
+  function card(p){
+    const pct = pctDone(p), a = alerts(p);
+    const flag = a.overdue.length ? '<span style="color:var(--bad);font-weight:700">●</span>'
+               : a.due.length ? '<span style="color:var(--warn);font-weight:700">●</span>' : '';
+    return `<button class="pcard ${p.id===cur?'on':''}" data-open="${p.id}">
+      <div class="pj">${esc(p.pj||'ohne PJ-Nr.')}</div>
+      <div class="nm">${esc(p.name||'Ohne Bezeichnung')}</div>
+      <div class="meta">${flag}<div class="bar"><i style="width:${pct}%;background:${p.status==='abgeschlossen'?'var(--ok)':'var(--accent)'}"></i></div><span>${pct}%</span></div>
+    </button>`;
+  }
+}
+
+/* ============================================================
+   7 — Oberfläche: Übersicht mit Erinnerungen
+   ============================================================ */
+function renderDashboard(){
+  const over = [], soon = [], nach = [], stale = [];
+  DB.projects.forEach(p => {
+    if(p.status === 'abgeschlossen') return;
+    const a = alerts(p);
+    a.overdue.forEach(x => over.push({p, x}));
+    a.due.forEach(x => soon.push({p, x}));
+    if(a.nach.length) nach.push({p, n:a.nach.length});
+    const d = daysTo(p.due);
+    if(d !== null && d < 0) stale.push({p, d});
+  });
+
+  const badge = over.length + stale.length;
+  document.title = (badge ? `(${badge}) ` : '') + 'PTA Inventarisierung';
+
+  let h = '';
+  if(over.length || stale.length){
+    h += `<div class="alert bad"><h4>Überfällig — bitte zuerst erledigen</h4><ul>`;
+    stale.forEach(({p,d}) => h += `<li><b>${esc(p.pj||p.name)}</b> — Abschlusstermin seit ${Math.abs(d)} Tag${Math.abs(d)===1?'':'en'} überschritten <a data-open="${p.id}">öffnen</a></li>`);
+    over.forEach(({p,x}) => h += `<li><b>${esc(p.pj||p.name)}</b> — Nachkontrolle „${esc(x.ch.t)}“ war am ${fmtDate(x.date)} fällig <a data-open="${p.id}">öffnen</a></li>`);
+    h += `</ul></div>`;
+  }
+  if(soon.length){
+    h += `<div class="alert"><h4>Nachkontrolle in den nächsten Tagen</h4><ul>`;
+    soon.forEach(({p,x}) => h += `<li><b>${esc(p.pj||p.name)}</b> — „${esc(x.ch.t)}“ am ${fmtDate(x.date)}${x.d===0?' (heute)':''} <a data-open="${p.id}">öffnen</a></li>`);
+    h += `</ul></div>`;
+  }
+  if(nach.length){
+    h += `<div class="alert"><h4>Offene Nacharbeiten</h4><ul>`;
+    nach.forEach(({p,n}) => h += `<li><b>${esc(p.pj||p.name)}</b> — ${n} Punkt${n===1?'':'e'} mit Nacharbeit <a data-open="${p.id}">öffnen</a></li>`);
+    h += `</ul></div>`;
+  }
+
+  const offen = DB.projects.filter(p => p.status !== 'abgeschlossen');
+  if(!DB.projects.length){
+    h += `<div class="empty">
+      <h2>Noch keine Projekte</h2>
+      <p>Lege ein Projekt an, arbeite die 19 Prüfpunkte ab und hinterlege die Originaldokumente. Später erkennt das Werkzeug, ob sich Spleissreport, BEP-Report, Kabeleinzugsplan oder Situationsplan verändert haben.</p>
+      <button class="btn p" id="btnNew2">Erstes Projekt anlegen</button>
+    </div>`;
+  } else if(!over.length && !soon.length && !nach.length){
+    h += `<div class="alert" style="border-left-color:var(--ok);background:var(--ok-soft)">
+      <h4>Nichts überfällig</h4>
+      <ul><li>${offen.length} Projekt${offen.length===1?'':'e'} in Bearbeitung, keine fälligen Nachkontrollen.</li></ul></div>`;
+  }
+  if(DB.projects.length){
+    h += `<h3 style="font-size:15px;margin:26px 0 10px">Projekte in Bearbeitung</h3>`;
+    h += offen.length ? `<table class="log"><thead><tr><th>PJ-Nummer</th><th>Bezeichnung</th><th>Location</th><th>Modell</th><th>Bearbeiter</th><th>Stand</th><th>Termin</th></tr></thead><tbody>`
+      + offen.map(p => {
+          const c = counts(p), d = daysTo(p.due);
+          const zeile = `<tr style="cursor:pointer" data-open="${p.id}">
+            <td class="t">${esc(p.pj||'—')}</td><td>${esc(p.name||'—')}</td><td>${esc(p.ort||'—')}</td>
+            <td>${esc(p.modell||'—')}</td><td>${esc(p.bearb||'—')}</td>
+            <td>${pctDone(p)}% · ${c.offen} offen${c.nach?` · <span style="color:var(--bad)">${c.nach} Nacharbeit</span>`:''}</td>
+            <td class="t" ${d!==null&&d<0?'style="color:var(--bad)"':''}>${fmtDate(p.due)}</td></tr>`;
+          const notiz = p.notes ? `<tr style="cursor:pointer" data-open="${p.id}">
+            <td></td><td colspan="6" style="padding-top:0;color:var(--ink2);
+              font-size:12.5px;white-space:pre-wrap;border-top:0">${esc(p.notes)}</td></tr>` : '';
+          return zeile + notiz;
+        }).join('') + `</tbody></table>`
+      : `<p style="color:var(--ink3);font-size:13.5px">Alle Projekte sind abgeschlossen.</p>`;
+  }
+  $('#main').innerHTML = h;
+}
+
+/* ============================================================
+   8 — Oberfläche: Projekt
+   ============================================================ */
+function renderProject(nachOben){
+  const p = proj();
+  if(!p){ cur = null; return renderDashboard(); }
+  // Wo der Benutzer gerade liest, bleibt erhalten — sonst springt die
+  // Liste bei jeder Änderung wieder an den Anfang.
+  const stand = nachOben ? 0 : ($('#main').scrollTop || 0);
+  const c = counts(p), a = alerts(p), pct = pctDone(p);
+  const w = k => c.total ? (c[k]/c.total*100) : 0;
+  const d = daysTo(p.due);
+
+  const statusTag = p.status === 'abgeschlossen'
+    ? '<span class="tag ok">Abgeschlossen</span>'
+    : c.nach ? '<span class="tag bad">Nacharbeit nötig</span>'
+    : c.offen ? '<span class="tag">In Bearbeitung</span>'
+    : '<span class="tag warn">Bereit zum Abschluss</span>';
+
+  let h = `
+  <div class="print-only print-head">
+    <h1>Prüfprotokoll Inventarisierung PTA</h1>
+    <div style="font-size:12.5px;color:#4A5560">${esc(p.pj||'')} · ${esc(p.name||'')} · ${esc(p.ort||'')} · Ausbaumodell ${esc(p.modell||'—')} · Bearbeiter ${esc(p.bearb||'—')} · Gedruckt ${fmtDT(nowIso())}</div>
+  </div>
+
+  <div class="phead">
+    <div class="id">${esc(p.pj || 'ohne Nr.')}</div>
+    <div>
+      <h1>${esc(p.name || 'Ohne Bezeichnung')}</h1>
+      <div class="sub">
+        ${p.ort ? '<b>'+esc(p.ort)+'</b> · ' : ''}Ausbaumodell <b>${esc(p.modell||'—')}</b> ·
+        Bearbeiter <b>${esc(p.bearb||'—')}</b> · QM <b>${esc(p.qm||'—')}</b> ·
+        Termin <b ${d!==null&&d<0?'style="color:var(--bad)"':''}>${fmtDate(p.due)}</b>
+        ${d!==null&&d<0&&p.status!=='abgeschlossen'?` <span class="chip over">${Math.abs(d)} Tage überfällig</span>`:''}
+        &nbsp;<span id="projektstand">${statusTag}</span>
+      </div>
+    </div>
+    <div class="right">
+      <button class="btn sm" data-act="uebersicht" title="Alle Projekte anzeigen">
+        ← Übersicht</button>
+      <button class="btn sm" data-act="edit">Angaben</button>
+      <button class="btn sm" data-act="archive">Archiv sichern</button>
+      <button class="btn sm" data-act="print">Protokoll drucken</button>
+      ${p.status === 'abgeschlossen'
+        ? '<button class="btn sm" data-act="reopen">Wieder öffnen</button>'
+        : '<button class="btn p sm" data-act="close">Projekt abschliessen</button>'}
+    </div>
+  </div>
+
+  <div class="progress" id="fortschritt">${fortschrittHtml(p)}</div>
+  <div class="plegend" id="legende">${legendeHtml(p)}</div>`;
+
+  // Erinnerungen im Projekt
+  if(a.overdue.length || a.due.length){
+    h += `<div class="alert ${a.overdue.length?'bad':''}" style="margin-top:20px"><h4>Nachkontrollen</h4><ul>`;
+    a.overdue.forEach(x => h += `<li><b>${fmtDate(x.date)}</b> — ${esc(x.ch.t)} · seit ${Math.abs(x.d)} Tag${Math.abs(x.d)===1?'':'en'} fällig</li>`);
+    a.due.forEach(x => h += `<li><b>${fmtDate(x.date)}</b> — ${esc(x.ch.t)}${x.d===0?' · heute':''}</li>`);
+    h += `</ul></div>`;
+  }
+
+  h += `<div class="tabs no-print">
+    <button class="tab ${tab==='liste'?'on':''}" data-tab="liste">Prüfliste <span class="n" id="reiterOffen">${c.offen+c.nach}</span></button>
+    <button class="tab ${tab==='docs'?'on':''}" data-tab="docs">Dokumente <span class="n">${p.docs.length}</span></button>
+    <button class="tab ${tab==='xml'?'on':''}" data-tab="xml">PTA-AM <span class="n">${
+      p.komponenten ? (p.komponenten.objekte.filter(o => o.zuTun && !komErledigt(p, o.kennung)).length || '✓') : '–'}</span></button>
+    <button class="tab ${tab==='log'?'on':''}" data-tab="log">Verlauf</button>
+  </div>`;
+
+  if(tab === 'liste')      h += renderChecklist(p);
+  else if(tab === 'docs')  h += renderDocs(p);
+  else if(tab === 'xml')   h += renderKomponenten(p);
+  else                     h += renderLog(p);
+
+  h += `<div class="print-only print-sign">
+      <div>Bearbeiter — ${esc(p.bearb||'')} , Datum / Unterschrift</div>
+      <div>Quality Manager — ${esc(p.qm||'')} , Datum / Unterschrift</div>
+    </div>`;
+
+  $('#main').innerHTML = h;
+  $('#main').scrollTop = stand;
+}
+
+function fortschrittHtml(p){
+  const c = counts(p);
+  const w = k => c.total ? (c[k]/c.total*100) : 0;
+  return `<i style="width:${w('ok')}%;background:var(--ok)"></i>
+    <i style="width:${w('nach')}%;background:var(--bad)"></i>
+    <i style="width:${w('na')}%;background:var(--line2)"></i>
+    <i style="width:${w('offen')}%;background:var(--offen)"></i>`;
+}
+
+function legendeHtml(p){
+  const c = counts(p);
+  return `<span><i style="background:var(--ok)"></i>${c.ok} in Ordnung</span>
+    <span><i style="background:var(--bad)"></i>${c.nach} Nacharbeit</span>
+    <span><i style="background:var(--line2)"></i>${c.na} nicht relevant</span>
+    <span><i style="background:var(--offen)"></i>${c.offen} offen</span>
+    <span style="margin-left:auto;font-weight:600;color:var(--ink)">${pctDone(p)}% erledigt</span>`;
+}
+
+function standTag(p){
+  const c = counts(p);
+  if(p.status === 'abgeschlossen') return '<span class="tag ok">Abgeschlossen</span>';
+  if(c.nach)  return '<span class="tag bad">Nacharbeit nötig</span>';
+  if(c.offen) return '<span class="tag">In Bearbeitung</span>';
+  return '<span class="tag warn">Bereit zum Abschluss</span>';
+}
+
+/** Zeichnet einen einzelnen Prüfpunkt neu, ohne die Liste anzurühren. */
+function itemNeuZeichnen(p, id){
+  const el = document.querySelector(`[data-item="${id}"]`);
+  const ch = allChecks(p).find(x => x.id === id);
+  if(!el || !ch) return false;
+  const huelle = document.createElement('div');
+  huelle.innerHTML = renderItem(p, ch);
+  el.replaceWith(huelle.firstElementChild);
+  return true;
+}
+
+/** Frischt Fortschritt, Legende, Gruppenzähler und Reiterzahl auf. */
+function zaehlerAuffrischen(p, gruppe){
+  const c = counts(p);
+  const f = $('#fortschritt'); if(f) f.innerHTML = fortschrittHtml(p);
+  const l = $('#legende');     if(l) l.innerHTML = legendeHtml(p);
+  const r = $('#reiterOffen'); if(r) r.textContent = c.offen + c.nach;
+  const s = $('#projektstand');if(s) s.innerHTML = standTag(p);
+  if(gruppe){
+    const z = document.querySelector(`[data-gcnt="${gruppe}"]`);
+    if(z){
+      const liste = allChecks(p).filter(x => x.g === gruppe);
+      const fertig = liste.filter(x => ['ok','na'].includes((p.items[x.id]||{}).status)).length;
+      z.textContent = `${fertig}/${liste.length}`;
+    }
+  }
+}
+
+function renderChecklist(p){
+  const reihe = gruppenListe();
+  let h = '';
+  reihe.forEach((g, pos) => {
+    const list = allChecks(p).filter(ch => ch.g === g.id);
+    if(!list.length) return;
+    const done = list.filter(ch => ['ok','na'].includes((p.items[ch.id]||{}).status)).length;
+    const zu = gruppeZu(g.id);
+    const c = {offen:0, nach:0};
+    list.forEach(ch => { const s = (p.items[ch.id]||{}).status || 'offen';
+                         if(c[s] !== undefined) c[s]++; });
+    h += `<div class="group ${zu?'zu':''}" data-gruppe="${g.id}">
+      <div class="ghead" draggable="true" data-ghead="${g.id}">
+        <span class="griff no-print" title="Zum Verschieben ziehen">⣿</span>
+        <span class="gbar" style="background:${g.c}"></span>
+        <h3 data-gklapp="${g.id}" title="Klicken zum Zu- und Aufklappen">${esc(g.t)}</h3>
+        <button class="gzu no-print" data-gklapp="${g.id}">${zu?'aufklappen':'minimieren'}</button>
+        <span class="cnt" data-gcnt="${g.id}">${done}/${list.length}${
+          zu && (c.offen||c.nach) ? ` · ${c.offen} offen${c.nach?`, ${c.nach} Nacharbeit`:''}` : ''}</span>
+        <button class="gpfeil no-print" data-gauf="${g.id}" ${pos===0?'disabled':''}
+          title="nach oben">▲</button>
+        <button class="gpfeil no-print" data-gab="${g.id}" ${pos===reihe.length-1?'disabled':''}
+          title="nach unten">▼</button>
+      </div>`;
+    if(!zu) list.forEach(ch => h += renderItem(p, ch));
+    h += `</div>`;
+  });
+  h += `<div style="display:flex;gap:9px;flex-wrap:wrap" class="no-print">
+    <button class="btn q sm" id="btnAddItem">+ Eigenen Prüfpunkt hinzufügen</button>
+    <button class="btn q sm" id="btnGruppenReset">Reihenfolge zurücksetzen</button>
+  </div>`;
+  return h;
+}
+
+function renderItem(p, ch){
+  const it = p.items[ch.id] || {};
+  const s  = it.status || 'offen';
+  const isOpen = openItems[ch.id] || !!(it.note || it.value || it.followUp);
+  const fuDays = it.followUp && !it.followUpDone ? daysTo(it.followUp) : null;
+
+  const chips = [];
+  if(ch.custom) chips.push(`<span class="chip">eigener Punkt${ch.global ? ' · alle Projekte' : ' · nur hier'}</span>`);
+  if(it.value) chips.push(`<span class="chip val">${esc(it.value)}</span>`);
+  if(it.note)  chips.push(`<span class="chip">Bemerkung</span>`);
+  if(fuDays !== null) chips.push(`<span class="chip ${fuDays<0?'over':'due'}">Nachkontrolle ${fmtDate(it.followUp)}</span>`);
+
+  const valField = ch.val ? (ch.val.opts
+    ? `<div class="fld"><label>${esc(ch.val.label)}</label>
+         <select data-val="${ch.id}"><option value="">—</option>
+         ${ch.val.opts.map(o => `<option ${it.value===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`
+    : `<div class="fld"><label>${esc(ch.val.label)}</label>
+         <input data-val="${ch.id}" value="${esc(it.value||'')}" placeholder="Wert eintragen"></div>`) : '';
+
+  return `<div class="item s-${s} ${isOpen?'open':''}" data-item="${ch.id}">
+    <div class="irow">
+      <div class="ititle">
+        <div class="t">${esc(ch.t)}</div>
+        ${ch.h ? `<div class="h ${ch.imp?'imp':''}">${esc(ch.h)}</div>` : ''}
+        ${chips.length ? `<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${chips.join('')}</div>` : ''}
+      </div>
+      <div class="stats no-print">
+        ${Object.entries(STATUS).map(([k,v]) =>
+          `<button data-s="${k}" data-set="${ch.id}" class="${s===k?'on':''}">${v}</button>`).join('')}
+      </div>
+      <button class="toggle no-print" data-toggle="${ch.id}" title="Details">${isOpen?'▴':'▾'}</button>
+    </div>
+    <div class="idetail">
+      ${valField}
+      <div class="fld grow"><label>Bemerkung</label>
+        <textarea data-note="${ch.id}" rows="2" placeholder="Feststellung, Massnahme, Ort">${esc(it.note||'')}</textarea></div>
+      <div class="fld"><label>Nachkontrolle am</label>
+        <input type="date" data-fu="${ch.id}" value="${esc(it.followUp||'')}"></div>
+      ${it.followUp ? `<div class="fld"><label>&nbsp;</label>
+        <label style="display:flex;gap:7px;align-items:center;font-size:13px;font-weight:400;padding:7px 0">
+          <input type="checkbox" data-fudone="${ch.id}" ${it.followUpDone?'checked':''} style="width:auto"> erledigt
+        </label></div>` : ''}
+      ${ch.custom ? `<div class="fld"><label>&nbsp;</label>
+        <button class="btn q sm danger no-print" data-itemdel="${ch.id}"
+          style="padding:6px 9px">Prüfpunkt entfernen</button></div>` : ''}
+      <div class="imeta">
+        <span>Stand: <b>${STATUS[s]}</b></span>
+        ${it.by ? `<span>durch ${esc(it.by)}</span>` : ''}
+        ${it.at ? `<span>am ${fmtDT(it.at)}</span>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderDocs(p){
+  let h = `<p style="font-size:13.5px;color:var(--ink2);max-width:74ch;margin:0 0 16px">
+    Lege vom Original einen Fingerabdruck an. Bei der Nachkontrolle die aktuelle Datei einlesen —
+    das Werkzeug meldet, ob sie verändert wurde, und zeigt bei lesbarem Text die geänderten Zeilen.
+    Die Dateien selbst bleiben in deinem Projektordner, gespeichert wird nur der Fingerabdruck.</p>`;
+
+  p.docs.forEach(dc => {
+    const r = dc.ref, l = dc.last;
+    h += `<div class="doc" data-doc="${dc.id}">
+      <div class="dhead">
+        <span class="gbar" style="background:${r ? (l ? (l.same?'var(--ok)':'var(--warn)') : 'var(--accent)') : 'var(--line2)'}"></span>
+        <span class="dn">${esc(dc.name)}</span>
+        ${r ? `<span class="tag">${r.textOk?'Text lesbar':'nur Fingerabdruck'}</span>` : '<span class="tag">kein Original</span>'}
+        ${l ? (l.same ? '<span class="tag ok">unverändert</span>' : '<span class="tag warn">verändert</span>') : ''}
+        <button class="btn q sm no-print" data-docdel="${dc.id}" title="Dokument entfernen">Entfernen</button>
+      </div>
+      <div class="dbody">
+        <div>
+          ${r ? fpanel('Original vom ' + fmtDT(r.at), r, dc.id, 'ref')
+              : `<div class="drop" data-drop="${dc.id}|ref"><b>Original hier ablegen</b>Datei hineinziehen oder klicken</div>`}
+        </div>
+        <div>
+          ${r ? (l ? verdictHtml(l, dc.id) : `<div class="drop" data-drop="${dc.id}|now"><b>Aktuellen Stand prüfen</b>Revidierte Datei hineinziehen oder klicken</div>`)
+              : `<div class="drop" style="opacity:.5;pointer-events:none"><b>Prüfung</b>Zuerst das Original erfassen</div>`}
+        </div>
+        ${dc.revisions.length ? `<div class="revlist"><h5>Revisionsverlauf</h5>` + dc.revisions.map(rv =>
+          `<div class="rev"><span class="rt">${fmtDT(rv.at)}</span><span class="rn">${esc(rv.name)}</span>
+           <span class="tag ${rv.same?'ok':'warn'}">${rv.same?'unverändert':'verändert'}</span></div>`).join('') + `</div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  h += `<button class="btn q sm no-print" id="btnAddDoc">+ Weiteres Dokument aufnehmen</button>`;
+  return h;
+
+  function fpanel(title, r, docId, kind){
+    return `<div class="fpanel">
+      <div class="fn">${esc(r.name)}</div>
+      <dl class="kv">
+        <dt>Erfasst</dt><dd>${fmtDT(r.at)}</dd>
+        <dt>Grösse</dt><dd>${fmtSize(r.size)}</dd>
+        <dt>Geändert</dt><dd>${r.lastModified?fmtDT(new Date(r.lastModified).toISOString()):'—'}</dd>
+        ${r.pages!=null?`<dt>Seiten</dt><dd>${r.pages}</dd>`:''}
+        <dt>${esc(r.hashAlg)}</dt><dd style="font-size:11px">${esc(r.hash)}</dd>
+        ${r.pfad ? '<dt>Kopie</dt><dd>im Datenordner abgelegt</dd>' : ''}
+      </dl>
+      <div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap" class="no-print">
+        <button class="btn sm" data-drop="${docId}|${kind}">Original ersetzen</button>
+        <button class="btn q sm danger" data-reflos="${docId}">Original entfernen</button>
+        ${r.pfad ? `<button class="btn sm" data-ordner="${esc(r.pfad)}">Kopie im Ordner zeigen</button>` : ''}
+      </div>
+    </div>`;
+  }
+}
+
+function verdictHtml(l, docId){
+  let h = `<div class="verdict ${l.same?'same':'diff'}">`;
+  if(l.same){
+    h += `<b>Unverändert.</b> Die geprüfte Datei ist bitgenau identisch mit dem Original.<br>
+          <span style="font-size:12.5px">${esc(l.name)} · geprüft ${fmtDT(l.at)}</span>`;
+  } else {
+    h += `<b>Verändert.</b> `;
+    const bits = [];
+    if(l.sizeDelta) bits.push(`Grösse ${l.sizeDelta>0?'+':''}${fmtSize(Math.abs(l.sizeDelta))}`);
+    if(l.pagesDelta) bits.push(`Seiten ${l.pagesDelta>0?'+':''}${l.pagesDelta}`);
+    if(l.diff) bits.push(`${l.diff.changed} geänderte Zeile${l.diff.changed===1?'':'n'}`);
+    const b = l.bilder;
+    if(b && b.moeglich && b.geaenderte_seiten.length){
+      const n = b.seiten.reduce((s, x) => s + (x.stellen ? x.stellen.length : 0), 0);
+      bits.push(`Seite ${b.geaenderte_seiten.join(', ')}`);
+      if(n) bits.push(`${n} veränderte Stelle${n===1?'':'n'}`);
+    }
+    h += bits.length ? bits.join(' · ') : 'Der Inhalt weicht vom Original ab.';
+    h += `<br><span style="font-size:12.5px">${esc(l.name)} · geprüft ${fmtDT(l.at)}</span>`;
+    if(!l.diff && !(b && b.moeglich))
+      h += `<br><span style="font-size:12.5px">Kein Inhaltsvergleich möglich — bitte visuell gegenlesen.</span>`;
+  }
+  h += `</div>`;
+
+  // Geänderte Planseiten
+  const bi = l.bilder;
+  if(bi && bi.moeglich){
+    const geaendert = bi.seiten.filter(s => s.geaendert);
+    geaendert.forEach(s => {
+      const sichtbar = s.stellen.filter(st => !stelleAus(l, s.nr, st.nr));
+      const versteckt = s.stellen.length - sichtbar.length;
+      const vx = (s.versatz && (s.versatz[0] || s.versatz[1])) ? s.versatz : null;
+
+      h += `<div class="planseite">
+        <div class="pshead">Seite ${s.nr}${s.hinweis ? ' — ' + esc(s.hinweis)
+          : ` — ${sichtbar.length} Stelle${sichtbar.length===1?'':'n'} verändert` +
+            (versteckt ? `, ${versteckt} ausgeblendet` : '') + `, ${s.anteil} % der Fläche`}</div>`;
+      if(s.format) h += `<div class="hint" style="margin:0 0 8px;color:var(--warn)">${esc(s.format)}</div>`;
+      if(vx) h += `<div class="hint" style="margin:0 0 8px">Der Plan liegt gegenüber dem
+        Original um ${Math.abs(vx[0])} / ${Math.abs(vx[1])} Bildpunkte versetzt —
+        das wurde ausgeglichen, damit nicht der Blattrahmen als Änderung erscheint.</div>`;
+
+      if(s.uebersicht){
+        h += `<div class="planwrap" data-bild="${esc(s.uebersicht)}"
+                   title="Ganze Seite gross anzeigen">
+          <img src="api/vergleichsbild/${esc(s.uebersicht)}" loading="lazy"
+               alt="Übersicht Seite ${s.nr}">`;
+        sichtbar.forEach(st => {
+          const a = st.anteile;
+          if(!a) return;
+          h += `<div class="rahmen" data-zustelle="${s.nr}-${st.nr}"
+            title="Stelle ${st.nr} — anzeigen"
+            style="left:${(a[0]*100).toFixed(3)}%;top:${(a[1]*100).toFixed(3)}%;
+                   width:${((a[2]-a[0])*100).toFixed(3)}%;height:${((a[3]-a[1])*100).toFixed(3)}%">
+            <b>${st.nr}</b></div>`;
+        });
+        h += `</div>
+          <div class="hint" style="margin:5px 0 12px;display:flex;gap:12px;
+                      align-items:center;flex-wrap:wrap">
+            <span style="flex:1;min-width:240px">Die roten Rahmen zeigen, wo sich etwas
+              geändert hat — ein Klick darauf springt zur Vergrösserung. Ein Klick
+              daneben zeigt die ganze Seite gross.</span>
+            <button class="btn q sm no-print" data-bild="${esc(s.uebersicht)}">Ganze Seite gross</button>
+            ${versteckt ? `<button class="btn q sm no-print" data-alle-zeigen="${docId}">
+              ${versteckt} ausgeblendete wieder anzeigen</button>` : ''}</div>`;
+      }
+
+      sichtbar.forEach(st => {
+        h += `<div class="stelle-block" id="stelle-${docId}-${s.nr}-${st.nr}">
+          <div class="stelle-kopf">
+            <b>Stelle ${st.nr}</b>
+            <input class="komfeld no-print" data-komobj="${docId}|${s.nr}|${st.nr}"
+              value="${esc((l.objekte || {})[s.nr + ':' + st.nr] || '')}"
+              placeholder="Objekt-Kennung, z. B. CHA08wwdnd"
+              title="Welches Objekt betrifft diese Änderung? Für den Abgleich mit dem PTA-AM">
+            <button class="btn q sm weg no-print" data-stelleweg="${docId}|${s.nr}|${st.nr}"
+              title="Diese Stelle aus der Übersicht nehmen">nicht relevant</button>
+          </div>
+          <a data-bild="${esc(st.bild)}" class="planbild" style="margin:0" title="Gross anzeigen">
+            <img src="api/vergleichsbild/${esc(st.bild)}" loading="lazy"
+                 alt="Stelle ${st.nr} auf Seite ${s.nr}"></a>
+        </div>`;
+      });
+
+      if(!sichtbar.length && s.stellen.length)
+        h += `<div class="hint" style="margin:6px 0 12px">Alle ${s.stellen.length} Stellen
+          ausgeblendet. <a data-alle-zeigen="${docId}" style="cursor:pointer;text-decoration:underline">
+          wieder anzeigen</a></div>`;
+      h += `</div>`;
+    });
+  } else if(bi && !bi.moeglich && bi.grund){
+    h += `<div class="hint" style="margin-top:8px">Bildvergleich nicht möglich: ${esc(bi.grund)}</div>`;
+  }
+
+  h += `<div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap" class="no-print">
+      <button class="btn sm" data-drop="${docId}|now">Andere Datei prüfen</button>
+      <button class="btn sm" data-accept="${docId}">Als neues Original übernehmen</button>
+      <button class="btn q sm" data-verwerfen="${docId}">Prüfung verwerfen</button>
+    </div>`;
+  return h;
+}
+
+/* ---------- Arbeitsarten: was wurde im PTA gemacht ---------- */
+/* Jede Arbeitsart nennt die Objektarten, die in der Komponentenliste erscheinen
+   müssen, wenn sie wirklich ausgeführt wurde. Was die Datei nicht hergibt —
+   allen voran Datumsangaben — steht als ausdrückliche Bestätigung dabei. */
+const ARBEITEN_VORGABE = [
+  {id:'trassee', t:'Trassee anpassen', gruppen:['Erdstrecke','Trassenpunkt'],
+   pruef:['Verlauf und Länge der Erdstrecke im PTA nachgeführt']},
+  {id:'ks_neu', t:'KS Neubau', gruppen:['Schacht','Schachtabdeckung'],
+   pruef:['Schachttyp und Grösse erfasst', 'Abdeckung erfasst (sichtbar oder überdeckt)']},
+  {id:'ks_anp', t:'KS anpassen', gruppen:['Schacht'],
+   pruef:['Geänderte Masse im PTA nachgeführt']},
+  {id:'rohr_neu', t:'Neubau von Rohren', gruppen:['Rohranlage'],
+   pruef:['Rohrtyp und Verlauf erfasst']},
+  {id:'einzug', t:'Kabeleinzug mit Datum', gruppen:['LWL-Kabel'],
+   pruef:['Einzugsdatum im PTA gesetzt']},
+  {id:'hak', t:'HAK ausbauen nach BEP-Report', gruppen:['Hausanschluss','LWL-Kabel','BEP','OTO'],
+   pruef:['Ausbaudatum im PTA gesetzt', 'Mit dem BEP-Report abgeglichen']},
+];
+
+/* Objektarten, bei denen die Liste zwingend eine Länge führen muss. */
+const LAENGENPFLICHT = ['Rohranlage', 'LWL-Kabel'];
+
+/* Objektarten, die das Programm heute kennt. Kommen neue dazu, meldet es sie
+   beim Einlesen — dann lässt sich die Arbeitsart hier ergänzen. */
+const OBJEKTARTEN = ['Rohranlage', 'Schacht', 'Schachtabdeckung', 'Erdstrecke',
+  'LWL-Kabel', 'BEP', 'OTO', 'Hausanschluss', 'Muffe', 'Trassenpunkt', 'Kabelreserve'];
+
+/** Die Arbeitsarten sind änderbar und gelten für alle Projekte. */
+function arbeitsarten(){
+  if(!DB.arbeitsarten || !DB.arbeitsarten.length)
+    DB.arbeitsarten = ARBEITEN_VORGABE.map(a => JSON.parse(JSON.stringify(a)));
+  return DB.arbeitsarten;
+}
+
+function bekannteObjektarten(p){
+  const dabei = new Set(OBJEKTARTEN);
+  if(p && p.komponenten) (p.komponenten.gruppen || []).forEach(g => dabei.add(g));
+  arbeitsarten().forEach(a => (a.gruppen || []).forEach(g => dabei.add(g)));
+  return [...dabei].sort();
+}
+
+function arbeitenStand(p){
+  if(!p.arbeiten) p.arbeiten = {aktiv:[], bestaetigt:[]};
+  p.arbeiten.aktiv = p.arbeiten.aktiv || [];
+  p.arbeiten.bestaetigt = p.arbeiten.bestaetigt || [];
+  return p.arbeiten;
+}
+function arbeitAktiv(p, id){ return arbeitenStand(p).aktiv.includes(id); }
+function pruefBestaetigt(p, id, i){ return arbeitenStand(p).bestaetigt.includes(`${id}#${i}`); }
+
+function arbeitSchalten(id, an){
+  const p = proj(); const s = arbeitenStand(p);
+  s.aktiv = an ? s.aktiv.concat(s.aktiv.includes(id) ? [] : [id])
+               : s.aktiv.filter(x => x !== id);
+  if(!an) s.bestaetigt = s.bestaetigt.filter(x => !x.startsWith(id + '#'));
+  touch(p, `${an ? 'Arbeitsart gesetzt' : 'Arbeitsart entfernt'}: ${
+    (arbeitsarten().find(a => a.id === id) || {}).t || id}`);
+  persist(); renderProject();
+}
+
+function pruefSchalten(schluessel, an){
+  const p = proj(); const s = arbeitenStand(p);
+  s.bestaetigt = an ? s.bestaetigt.concat(s.bestaetigt.includes(schluessel) ? [] : [schluessel])
+                    : s.bestaetigt.filter(x => x !== schluessel);
+  persist(); renderProject();
+}
+
+/** Prüft jede angekreuzte Arbeitsart gegen die Komponentenliste. */
+function arbeitenPruefen(p){
+  const s = arbeitenStand(p);
+  const k = p.komponenten;
+  const geaendert = k ? k.objekte.filter(o => o.zuTun) : [];
+  const abgedeckt = new Set();
+
+  const ergebnisse = arbeitsarten().filter(a => s.aktiv.includes(a.id)).map(a => {
+    const treffer = geaendert.filter(o => a.gruppen.includes(o.gruppe));
+    treffer.forEach(o => abgedeckt.add(o.kennung));
+    const offen = a.pruef.map((text, i) => ({text, i, ok: pruefBestaetigt(p, a.id, i)}))
+                         .filter(x => !x.ok);
+    return {arbeit:a, treffer, offen, fehlt: !!k && !treffer.length};
+  });
+
+  const ohneArbeit = geaendert.filter(o => !abgedeckt.has(o.kennung));
+  const ohneLaenge = geaendert.filter(o => LAENGENPFLICHT.includes(o.gruppe) && !o.laenge);
+  return {ergebnisse, ohneArbeit, ohneLaenge, geaendert: geaendert.length};
+}
+
+let arbeitBearbeitet = null;
+
+function arbeitDialog(id){
+  const p = proj();
+  const a = id ? arbeitsarten().find(x => x.id === id) : null;
+  arbeitBearbeitet = a ? a.id : null;
+  $('#dlgArbeitTitel').textContent = a ? 'Arbeitsart bearbeiten' : 'Eigene Arbeitsart';
+  $('#fArbeitTitel').value = a ? a.t : '';
+  $('#fArbeitPruef').value = a ? (a.pruef || []).join('\n') : '';
+  $('#btnArbeitLoeschen').style.display = a ? '' : 'none';
+  arbeitGruppenZeichnen(bekannteObjektarten(p), a ? (a.gruppen || []) : []);
+  $('#fArbeitGruppeNeu').value = '';
+  $('#dlgArbeit').showModal();
+  $('#fArbeitTitel').focus();
+}
+
+function arbeitGruppenZeichnen(alle, gewaehlt){
+  $('#fArbeitGruppen').innerHTML = alle.map(g =>
+    `<label class="chip" style="cursor:pointer;padding:5px 9px;font-weight:500">
+      <input type="checkbox" value="${esc(g)}" ${gewaehlt.includes(g)?'checked':''}
+        style="width:auto;margin-right:6px">${esc(g)}</label>`).join('');
+}
+
+function arbeitGruppenGewaehlt(){
+  return [...document.querySelectorAll('#fArbeitGruppen input:checked')].map(x => x.value);
+}
+
+function arbeitSpeichern(){
+  const titel = $('#fArbeitTitel').value.trim();
+  if(!titel){ toast('Bitte eine Bezeichnung erfassen'); return; }
+  const pruef = $('#fArbeitPruef').value.split('\n').map(z => z.trim()).filter(Boolean);
+  const gruppen = arbeitGruppenGewaehlt();
+  const liste = arbeitsarten();
+  if(arbeitBearbeitet){
+    const a = liste.find(x => x.id === arbeitBearbeitet);
+    Object.assign(a, {t:titel, gruppen, pruef});
+  } else {
+    liste.push({id:'a' + uid(), t:titel, gruppen, pruef, eigen:true});
+  }
+  persist(true); $('#dlgArbeit').close(); renderProject();
+  toast('Arbeitsart gespeichert');
+}
+
+function arbeitLoeschen(){
+  if(!arbeitBearbeitet) return;
+  const a = arbeitsarten().find(x => x.id === arbeitBearbeitet);
+  if(!confirm(`Arbeitsart „${a.t}" entfernen?\n\nSie verschwindet aus allen Projekten.`)) return;
+  DB.arbeitsarten = arbeitsarten().filter(x => x.id !== arbeitBearbeitet);
+  DB.projects.forEach(pr => {
+    if(!pr.arbeiten) return;
+    pr.arbeiten.aktiv = (pr.arbeiten.aktiv || []).filter(x => x !== arbeitBearbeitet);
+    pr.arbeiten.bestaetigt = (pr.arbeiten.bestaetigt || [])
+      .filter(x => !x.startsWith(arbeitBearbeitet + '#'));
+  });
+  persist(true); $('#dlgArbeit').close(); renderProject();
+}
+
+function arbeitsartenZuruecksetzen(){
+  if(!confirm('Alle Arbeitsarten auf die Vorgabe zurücksetzen?\n\n' +
+              'Eigene Arbeitsarten gehen dabei verloren.')) return;
+  DB.arbeitsarten = ARBEITEN_VORGABE.map(a => JSON.parse(JSON.stringify(a)));
+  persist(true); renderProject();
+  toast('Arbeitsarten zurückgesetzt');
+}
+
+/* ---------- Komponentenliste aus dem PTA-AM ---------- */
+
+/* Asset-Kennungen im PTA: drei Grossbuchstaben, dann sieben Zeichen,
+   z. B. CUC098e542, CHA08wwdnd, UGR065yygu, FSC097557c. */
+const KENNUNG_MUSTER = /\b([A-Z]{3}[0-9][0-9A-Za-z]{5,7})\b/g;
+
+function kennungenAusText(text){
+  const gefunden = [];
+  let m;
+  KENNUNG_MUSTER.lastIndex = 0;
+  while((m = KENNUNG_MUSTER.exec(String(text || ''))) !== null) gefunden.push(m[1]);
+  return gefunden;
+}
+
+/** Alles, was im Projekt an Objektkennungen vermerkt wurde, mit Fundort. */
+function kennungenSammeln(p){
+  const treffer = new Map();
+  const merken = (kennung, quelle) => {
+    if(!kennung) return;
+    const k = kennung.trim();
+    if(!k) return;
+    if(!treffer.has(k)) treffer.set(k, []);
+    if(!treffer.get(k).includes(quelle)) treffer.get(k).push(quelle);
+  };
+
+  // aus Bemerkungen und Werten der Prüfpunkte
+  allChecks(p).forEach(ch => {
+    const it = p.items[ch.id] || {};
+    kennungenAusText(`${it.note || ''} ${it.value || ''}`).forEach(k => merken(k, ch.t));
+  });
+  kennungenAusText(p.notes || '').forEach(k => merken(k, 'Projektnotiz'));
+
+  // aus den Feldern bei den geänderten Planstellen — dort auch Zahlen zulassen
+  p.docs.forEach(dc => {
+    const l = dc.last;
+    if(!l || !l.objekte) return;
+    Object.entries(l.objekte).forEach(([stelle, wert]) => {
+      String(wert || '').split(/[\s,;]+/).filter(Boolean)
+        .forEach(k => merken(k, `${dc.name}, Stelle ${stelle.replace(':', '.')}`));
+    });
+  });
+  return treffer;
+}
+
+/** Stellt gegenüber: im Dokumentvergleich notiert gegen im PTA angepasst. */
+function abgleich(p){
+  const k = p.komponenten;
+  if(!k) return null;
+  const notiert = kennungenSammeln(p);
+  const imPta = new Map();
+  k.objekte.forEach(o => { if(o.zuTun) imPta.set(o.kennung, o); });
+  const alleImPta = new Set(k.objekte.map(o => o.kennung));
+
+  const fehltImPta = [], nichtNotiert = [], passt = [];
+  notiert.forEach((quellen, kennung) => {
+    if(imPta.has(kennung)) passt.push({kennung, quellen, objekt: imPta.get(kennung)});
+    else fehltImPta.push({kennung, quellen, inListe: alleImPta.has(kennung)});
+  });
+  imPta.forEach((objekt, kennung) => {
+    if(!notiert.has(kennung)) nichtNotiert.push({kennung, objekt});
+  });
+  return {fehltImPta, nichtNotiert, passt, notiert: notiert.size, imPta: imPta.size};
+}
+function komErledigt(p, kennung){
+  return !!(p.komponenten && (p.komponenten.erledigt || []).includes(kennung));
+}
+
+function renderArbeiten(p){
+  const pr = arbeitenPruefen(p);
+  const k = p.komponenten;
+  let h = `<h3 style="font-size:15px;margin:0 0 4px">Arbeitsarten in diesem Projekt</h3>
+    <p class="hint" style="margin:0 0 12px;max-width:78ch">Kreuze an, was du nach dem
+      Dokumentvergleich im PTA angepasst hast. Nach dem Einlesen der Komponentenliste
+      prüft das Programm, ob dazu auch wirklich Objekte geändert wurden.</p>`;
+
+  arbeitsarten().forEach(a => {
+    const an = arbeitAktiv(p, a.id);
+    const e = pr.ergebnisse.find(x => x.arbeit.id === a.id);
+    h += `<div class="arbeit ${an?'an':''}">
+      <label class="akopf">
+        <input type="checkbox" data-arbeit="${a.id}" ${an?'checked':''}>
+        <b>${esc(a.t)}</b>
+        <span class="hint" style="margin-left:auto">${esc((a.gruppen||[]).join(', ') || 'keine Objektart')}</span>
+        <button class="btn q sm no-print" data-arbeitedit="${esc(a.id)}"
+          title="Arbeitsart bearbeiten">bearbeiten</button>
+      </label>`;
+    if(an && e){
+      if(!k){
+        h += `<div class="hint" style="padding:0 12px 10px 34px">Komponentenliste noch
+          nicht eingelesen — die Gegenprüfung folgt danach.</div>`;
+      } else if(e.fehlt){
+        h += `<div class="apruef bad">In der Komponentenliste ist kein Objekt der Art
+          <b>${esc(a.gruppen.join(' / '))}</b> geändert. Entweder wurde die Anpassung im PTA
+          vergessen, oder die Arbeitsart trifft doch nicht zu.</div>`;
+      } else {
+        h += `<div class="apruef ok">${e.treffer.length} Objekt${e.treffer.length===1?'':'e'}
+          im PTA geändert: ${e.treffer.map(o => `<span class="chip val">${esc(o.kennung)}</span>`).join(' ')}</div>`;
+      }
+      a.pruef.forEach((text, i) => {
+        const schluessel = `${a.id}#${i}`;
+        const ok = pruefBestaetigt(p, a.id, i);
+        h += `<label class="apruef ${ok?'ok':'warn'}" style="display:flex;gap:9px;align-items:flex-start">
+          <input type="checkbox" data-pruef="${schluessel}" ${ok?'checked':''} style="margin-top:2px">
+          <span>${esc(text)}${ok ? '' :
+            ' — steht nicht in der Komponentenliste, bitte im PTA nachsehen und bestätigen'}</span></label>`;
+      });
+    }
+    h += `</div>`;
+  });
+
+  if(k && pr.ohneLaenge.length){
+    h += `<div class="alert bad"><h4>${pr.ohneLaenge.length} Objekt${pr.ohneLaenge.length===1?'':'e'} ohne Länge im PTA</h4>
+      <ul>${pr.ohneLaenge.map(o => `<li><b>${esc(o.kennung)}</b> — ${esc(o.gruppe)}
+        ${esc(o.typText || o.typ || '')}: bei dieser Objektart muss im PTA eine Länge
+        erfasst sein.</li>`).join('')}</ul></div>`;
+  }
+  if(k && pr.ohneArbeit.length){
+    h += `<div class="alert"><h4>${pr.ohneArbeit.length} geänderte${pr.ohneArbeit.length===1?'s':''} Objekt${pr.ohneArbeit.length===1?'':'e'} gehör${pr.ohneArbeit.length===1?'t':'en'} zu keiner
+      angekreuzten Arbeitsart</h4><ul><li>${pr.ohneArbeit.map(o =>
+      `${esc(o.kennung)} (${esc(o.gruppe)})`).join(', ')}</li>
+      <li>Entweder fehlt oben ein Kreuz, oder im PTA wurde etwas geändert, das nicht
+        vorgesehen war.</li></ul></div>`;
+  }
+  h += `<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:10px" class="no-print">
+    <button class="btn q sm" id="btnArbeitNeu">+ Eigene Arbeitsart</button>
+    <button class="btn q sm" id="btnArbeitReset">Arbeitsarten zurücksetzen</button></div>`;
+
+  if(k && (k.unbekanntePraefixe || []).length){
+    h += `<div class="alert"><h4>Unbekannte Objektarten in der Liste</h4><ul>
+      <li>Die Kennungspräfixe <b>${k.unbekanntePraefixe.map(esc).join(', ')}</b> kennt das
+        Programm noch nicht — die Objekte erscheinen mit ihrem Typ statt einer Objektart.</li>
+      <li>Sie lassen sich in einer eigenen Arbeitsart als Objektart erfassen. Sag mir sonst
+        Bescheid, dann kommt die Zuordnung fest ins Programm.</li></ul></div>`;
+  }
+  if(k && (k.neueFelder || []).length){
+    h += `<div class="alert"><h4>Neue Felder in der Datei</h4><ul>
+      <li>Diese Angaben liefert das PTA mit, das Programm wertet sie noch nicht aus:
+        <b>${k.neueFelder.map(esc).join(', ')}</b></li>
+      <li>Genau daraus lassen sich echte Prüfungen bauen — etwa auf ein Datum.
+        Schick die Datei weiter, dann wird das ergänzt.</li></ul></div>`;
+  }
+  return h + `<hr style="border:0;border-top:1px solid var(--line);margin:24px 0">`;
+}
+
+function renderKomponenten(p){
+  const k = p.komponenten;
+  if(!k){
+    const leer = `<p style="font-size:13.5px;color:var(--ink2);max-width:74ch;margin:0 0 16px">
+      Zieh die Komponentenliste aus dem PTA-AM hier hinein — die Datei
+      <span style="font-family:var(--mono);font-size:12.5px">…_Komponentenliste_….xml</span>.
+      Das Programm liest daraus alle Objekte mit ihrem Änderungsstand und macht eine
+      Arbeitsliste daraus. Was auf «Zu ändern» steht, ist noch nicht erledigt.</p>
+      <div class="drop" data-xml="1" style="padding:34px">
+        <b>Komponentenliste hier ablegen</b>Datei hineinziehen oder klicken</div>`;
+    return renderArbeiten(p) + leer;
+  }
+
+  const zuTun = k.objekte.filter(o => o.zuTun);
+  const fertig = zuTun.filter(o => komErledigt(p, o.kennung));
+  const offen = zuTun.filter(o => !komErledigt(p, o.kennung));
+  const ohne = k.objekte.filter(o => !o.zuTun);
+  const v = k.vergleich;
+
+  let h = `<div class="fpanel" style="margin-bottom:14px">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:baseline">
+      <div class="fn" style="margin:0">${esc(k.kopf.projekt || '—')}</div>
+      <span class="tag">${esc(k.kopf.schema || '—')}</span>
+      <span class="tag">${esc(k.kopf.schemastatus || '—')}</span>
+      <span style="font-size:12.5px;color:var(--ink2)">Netz ${esc(k.kopf.netznummer)}
+        ${esc(k.kopf.netz)} · Bearbeiter ${esc(k.kopf.bearbeiter || '—')}
+        · Stand ${esc(k.kopf.datum || '—')}</span>
+    </div>
+    <div style="margin-top:9px;font-size:12.5px;color:var(--ink2)">
+      Datei ${esc(k.datei || '—')} · eingelesen ${fmtDT(k.gelesen)}</div>
+    <div style="margin-top:10px;display:flex;gap:7px;flex-wrap:wrap" class="no-print">
+      <button class="btn sm" data-xml="1">Neue Ausgabe einlesen</button>
+      <button class="btn q sm danger" data-xmlweg="1">Liste entfernen</button>
+    </div>
+  </div>`;
+
+  const ab = abgleich(p);
+  h += `<div class="alert" style="border-left-color:var(--accent);background:var(--accent-soft)">
+    <h4>${zuTun.length} Objekte im PTA angepasst</h4>
+    <ul><li>${k.anzahl} Objekte in der Liste, davon ${zuTun.length} mit Änderungsstand und
+      ${ohne.length} unverändert.</li></ul></div>`;
+
+  if(ab){
+    const gut = !ab.fehltImPta.length;
+    h += `<div class="alert" style="border-left-color:${gut?'var(--ok)':'var(--bad)'};
+        background:${gut?'var(--ok-soft)':'var(--bad-soft)'}">
+      <h4>${gut ? 'Nichts vergessen — alles Notierte ist im PTA angepasst'
+                : `${ab.fehltImPta.length} notierte${ab.fehltImPta.length===1?'s':''} Objekt${ab.fehltImPta.length===1?'':'e'} fehlt${ab.fehltImPta.length===1?'':'en'} im PTA`}</h4>
+      <ul><li>${ab.notiert} Kennungen im Projekt vermerkt, ${ab.imPta} im PTA angepasst,
+        ${ab.passt.length} davon deckungsgleich.</li></ul></div>`;
+
+    if(ab.fehltImPta.length){
+      h += `<h3 style="font-size:14.5px;margin:22px 0 8px;color:var(--bad)">
+        Notiert, aber im PTA nicht angepasst</h3>
+        <p class="hint" style="margin:0 0 8px">Diese Kennungen hast du beim Dokumentvergleich
+          oder in einer Bemerkung festgehalten, im PTA tragen sie aber keinen Änderungsstand.
+          Genau hier geht eine Anpassung verloren.</p>
+        <table class="log"><thead><tr><th>Kennung</th><th>In der PTA-Liste</th>
+        <th>Vermerkt bei</th></tr></thead><tbody>`;
+      ab.fehltImPta.forEach(x => {
+        h += `<tr><td class="t" style="color:var(--bad);font-weight:600">${esc(x.kennung)}</td>
+          <td>${x.inListe ? 'vorhanden, aber ohne Änderungsstand' : 'gar nicht enthalten'}</td>
+          <td>${esc(x.quellen.join(' · '))}</td></tr>`;
+      });
+      h += `</tbody></table>`;
+    }
+
+    if(ab.nichtNotiert.length){
+      h += `<h3 style="font-size:14.5px;margin:22px 0 8px">Im PTA angepasst, im Projekt nicht vermerkt
+        <span style="font-weight:400;color:var(--ink3)">(${ab.nichtNotiert.length})</span></h3>
+        <p class="hint" style="margin:0 0 8px">Das muss kein Fehler sein — Objekte werden auch
+          angepasst, ohne dass sie im Plan sichtbar auffallen. Zum Gegenlesen.</p>
+        <table class="log"><thead><tr><th>Kennung</th><th>Art</th><th>Typ</th>
+        <th>Stand im PTA</th></tr></thead><tbody>`;
+      ab.nichtNotiert.forEach(x => {
+        h += `<tr><td class="t">${esc(x.kennung)}</td><td>${esc(x.objekt.gruppe)}</td>
+          <td>${esc(x.objekt.typText || x.objekt.typ || '—')}</td>
+          <td>${esc(x.objekt.status || '—')}</td></tr>`;
+      });
+      h += `</tbody></table>`;
+    }
+
+    if(ab.passt.length){
+      h += `<h3 style="font-size:14.5px;margin:22px 0 8px;color:var(--ok)">Deckungsgleich
+        <span style="font-weight:400;color:var(--ink3)">(${ab.passt.length})</span></h3>
+        <table class="log"><thead><tr><th>Kennung</th><th>Art</th><th>Vermerkt bei</th>
+        </tr></thead><tbody>`;
+      ab.passt.forEach(x => {
+        h += `<tr><td class="t">${esc(x.kennung)}</td><td>${esc(x.objekt.gruppe)}</td>
+          <td>${esc(x.quellen.join(' · '))}</td></tr>`;
+      });
+      h += `</tbody></table>`;
+    }
+  }
+
+  if(v){
+    h += `<div class="alert" style="border-left-color:var(--accent);background:var(--accent-soft)">
+      <h4>Vergleich mit der vorigen Ausgabe</h4><ul>
+      <li>${v.erledigt.length} seither erledigt${v.erledigt.length ?
+        ': ' + v.erledigt.map(o => esc(o.kennung)).join(', ') : ''}</li>
+      <li>${v.offen.length} weiterhin offen</li>
+      ${v.neu.length ? `<li><b>${v.neu.length} neu dazugekommen:</b>
+        ${v.neu.map(o => esc(o.kennung)).join(', ')}</li>` : ''}
+      ${v.weg.length ? `<li>${v.weg.length} nicht mehr in der Liste:
+        ${v.weg.map(o => esc(o.kennung)).join(', ')}</li>` : ''}
+      </ul></div>`;
+  }
+
+  const tabelle = (titel, liste, abhaken) => {
+    if(!liste.length) return '';
+    let s = `<h3 style="font-size:14.5px;margin:22px 0 8px">${esc(titel)}
+      <span style="font-weight:400;color:var(--ink3)">(${liste.length})</span></h3>
+      <table class="log"><thead><tr>
+        ${abhaken ? '<th style="width:38px"></th>' : ''}
+        <th>Kennung</th><th>Art</th><th>Typ</th><th>Länge</th><th>Stand im PTA</th>
+      </tr></thead><tbody>`;
+    liste.forEach(o => {
+      const erledigt = komErledigt(p, o.kennung);
+      s += `<tr${erledigt ? ' style="opacity:.55"' : ''}>
+        ${abhaken ? `<td><input type="checkbox" data-komhaken="${esc(o.kennung)}"
+          ${erledigt ? 'checked' : ''}></td>` : ''}
+        <td class="t">${esc(o.kennung)}</td>
+        <td>${esc(o.gruppe)}</td>
+        <td>${esc(o.typText || o.typ || '—')}</td>
+        <td class="t">${o.laenge ? esc(o.laenge + ' ' + o.einheit) : '—'}</td>
+        <td>${esc(o.status || '—')}</td></tr>`;
+    });
+    return s + `</tbody></table>`;
+  };
+
+  h = renderArbeiten(p) + h;
+  h += tabelle('Im PTA angepasst — zum Abhaken beim Gegenlesen', offen, true);
+  h += tabelle('Beim Gegenlesen abgehakt', fertig, true);
+  h += tabelle('Unverändert im PTA', ohne, false);
+  return h;
+}
+
+function renderLog(p){
+  let h = `<div style="display:flex;gap:9px;margin-bottom:14px" class="no-print">
+    <button class="btn sm" data-act="archive">Projektarchiv sichern</button>
+    <button class="btn sm" data-ordner="">Datenordner öffnen</button>
+    <button class="btn sm danger" data-act="delete">Projekt löschen</button>
+  </div>`;
+  if(p.notes) h += `<div class="alert" style="border-left-color:var(--accent);background:var(--accent-soft)"><h4>Projektnotiz</h4><div style="font-size:13.5px;white-space:pre-wrap">${esc(p.notes)}</div></div>`;
+  if(p.ordner) h += `<p style="font-size:13px;color:var(--ink2)">Ablage: <span style="font-family:var(--mono);font-size:12.5px">${esc(p.ordner)}</span></p>`;
+  h += `<table class="log"><thead><tr><th style="width:150px">Zeitpunkt</th><th>Ereignis</th></tr></thead><tbody>`
+     + p.log.map(l => `<tr><td class="t">${fmtDT(l.ts)}</td><td>${esc(l.text)}</td></tr>`).join('')
+     + `</tbody></table>`;
+  return h;
+}
+
+function render(nachOben){
+  setStorageBadge();
+  renderSide();
+  if(cur) renderProject(nachOben); else renderDashboard();
+}
+
+/* ============================================================
+   9 — Ereignisse
+   ============================================================ */
+document.addEventListener('click', async e => {
+  const t = e.target;
+  const closest = s => t.closest(s);
+
+  const openBtn = closest('[data-open]');
+  if(openBtn){ cur = openBtn.dataset.open; tab = 'liste'; openItems = {}; render(true); return; }
+
+  const tabBtn = closest('[data-tab]');
+  if(tabBtn){ tab = tabBtn.dataset.tab; renderProject(true); return; }
+
+  const arbeitEdit = closest('[data-arbeitedit]');
+  if(arbeitEdit){ e.preventDefault(); arbeitDialog(arbeitEdit.dataset.arbeitedit); return; }
+
+  const punktWeg = closest('[data-itemdel]');
+  if(punktWeg){ punktLoeschen(punktWeg.dataset.itemdel); return; }
+
+  const setBtn = closest('[data-set]');
+  if(setBtn){ setStatus(setBtn.dataset.set, setBtn.dataset.s); return; }
+
+  const tog = closest('[data-toggle]');
+  if(tog){
+    const id = tog.dataset.toggle;
+    openItems[id] = !tog.closest('.item').classList.contains('open');
+    if(!itemNeuZeichnen(proj(), id)) renderProject();
+    return;
+  }
+
+  const drop = closest('[data-drop]');
+  if(drop){ pickFile(drop.dataset.drop); return; }
+
+  const xmlKnopf = closest('[data-xml]');
+  if(xmlKnopf){
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.xml,text/xml,application/xml';
+    inp.onchange = () => { if(inp.files[0]) xmlEinlesen(inp.files[0]); };
+    inp.click();
+    return;
+  }
+
+  const xmlWeg = closest('[data-xmlweg]');
+  if(xmlWeg){ xmlEntfernen(); return; }
+
+  const acc = closest('[data-accept]');
+  if(acc){ acceptAsRef(acc.dataset.accept); return; }
+
+  const verw = closest('[data-verwerfen]');
+  if(verw){ pruefungVerwerfen(verw.dataset.verwerfen); return; }
+
+  const reflos = closest('[data-reflos]');
+  if(reflos){ originalEntfernen(reflos.dataset.reflos); return; }
+
+  const ddel = closest('[data-docdel]');
+  if(ddel){
+    const p = proj(); const d = p.docs.find(x => x.id === ddel.dataset.docdel);
+    if(d && confirm(`Dokument „${d.name}“ mitsamt Fingerabdruck und Verlauf entfernen?`)){
+      p.docs = p.docs.filter(x => x.id !== d.id);
+      touch(p, `Dokument entfernt: ${d.name}`); persist(); renderProject();
+    }
+    return;
+  }
+
+  const gklapp = closest('[data-gklapp]');
+  if(gklapp){ gruppeKlappen(gklapp.dataset.gklapp); return; }
+
+  const gauf = closest('[data-gauf]');
+  if(gauf){ gruppeSchieben(gauf.dataset.gauf, -1); return; }
+
+  const gab = closest('[data-gab]');
+  if(gab){ gruppeSchieben(gab.dataset.gab, 1); return; }
+
+  const stelleWeg = closest('[data-stelleweg]');
+  if(stelleWeg){ stelleAusblenden(stelleWeg.dataset.stelleweg); return; }
+
+  const alleZeigen = closest('[data-alle-zeigen]');
+  if(alleZeigen){ stellenWiederZeigen(alleZeigen.dataset.alleZeigen); return; }
+
+  const zurStelle = closest('[data-zustelle]');
+  if(zurStelle){
+    const el = document.getElementById('stelle-' + zurStelle.closest('.doc').dataset.doc +
+                                       '-' + zurStelle.dataset.zustelle);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+
+  const wahl = closest('[data-ansicht]');
+  if(wahl){ ansichtSetzen(wahl.dataset.ansicht); return; }
+
+  const bild = closest('[data-bild]');
+  if(bild){ bildGross(bild.dataset.bild); return; }
+
+  const ord = closest('[data-ordner]');
+  if(ord){ ordnerOeffnen(ord.dataset.ordner); return; }
+
+  const act = closest('[data-act]');
+  if(act){ projectAction(act.dataset.act); return; }
+
+  const close = closest('[data-close]');
+  if(close){ document.getElementById(close.dataset.close).close(); return; }
+
+  if(t.id === 'btnNew' || t.id === 'btnNew2') return openProjectDialog(null);
+  if(t.id === 'btnImport')     return $('#fileImport').click();
+  if(t.id === 'btnBackupAll')  return backupAll();
+  if(t.id === 'btnAnsicht')    return ansichtOeffnen();
+  if(t.id === 'btnEinstellungenSpeichern') return einstellungenSpeichern();
+  if(t.id === 'btnUpdateJetzt') return updateJetzt();
+  if(t.id === 'btnHelp')       return $('#dlgHelp').showModal();
+  if(t.id === 'btnAddItem')    return openItemDialog();
+  if(t.id === 'btnGruppenReset') return gruppenZuruecksetzen();
+  if(t.id === 'btnArbeitNeu')      return arbeitDialog(null);
+  if(t.id === 'btnArbeitReset')    return arbeitsartenZuruecksetzen();
+  if(t.id === 'btnArbeitSpeichern')return arbeitSpeichern();
+  if(t.id === 'btnArbeitLoeschen') return arbeitLoeschen();
+  if(t.id === 'btnAddDoc')     { $('#fDocName').value=''; $('#dlgDoc').showModal(); return; }
+  if(t.id === 'btnSaveProject')return saveProjectDialog();
+  if(t.id === 'btnSaveItem')   return saveItemDialog();
+  if(t.id === 'btnSaveDoc')    return saveDocDialog();
+});
+
+document.addEventListener('change', e => {
+  const t = e.target, p = proj();
+  if(!p) return;
+  if(t.dataset.val   !== undefined){ item(p,t.dataset.val).value = t.value; stamp(p, t.dataset.val); persist(); refreshChips(); }
+  if(t.dataset.fu !== undefined){
+    const id = t.dataset.fu;
+    item(p,id).followUp = t.value; item(p,id).followUpDone = false;
+    touch(p, t.value ? `Nachkontrolle gesetzt auf ${fmtDate(t.value)}` : 'Nachkontrolle entfernt');
+    persist();
+    openItems[id] = true;
+    if(!itemNeuZeichnen(p, id)) renderProject();
+    renderSide();
+  }
+  if(t.dataset.komhaken !== undefined){ komHaken(t.dataset.komhaken, t.checked); return; }
+  if(t.dataset.komobj !== undefined){ komObjektSetzen(t.dataset.komobj, t.value); return; }
+  if(t.dataset.arbeit !== undefined){ arbeitSchalten(t.dataset.arbeit, t.checked); return; }
+  if(t.dataset.pruef !== undefined){ pruefSchalten(t.dataset.pruef, t.checked); return; }
+  if(t.dataset.fudone !== undefined){
+    const id = t.dataset.fudone;
+    item(p,id).followUpDone = t.checked; persist();
+    openItems[id] = true;
+    if(!itemNeuZeichnen(p, id)) renderProject();
+    renderSide();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if(e.target.id !== 'fArbeitGruppeNeu' || e.key !== 'Enter') return;
+  e.preventDefault();
+  const wert = e.target.value.trim();
+  if(!wert) return;
+  const alle = [...new Set(bekannteObjektarten(proj()).concat(wert))].sort();
+  const gewaehlt = arbeitGruppenGewaehlt().concat(wert);
+  arbeitGruppenZeichnen(alle, gewaehlt);
+  e.target.value = '';
+});
+
+document.addEventListener('input', e => {
+  const t = e.target, p = proj();
+  if(t.id === 'q') return renderSide();
+  if(!p) return;
+  if(t.dataset.note !== undefined){ item(p,t.dataset.note).note = t.value; stamp(p, t.dataset.note); persist(); }
+});
+
+function item(p, id){
+  if(!p.items[id]) p.items[id] = {status:'offen'};
+  return p.items[id];
+}
+function stamp(p, id){
+  const it = item(p, id);
+  it.at = nowIso(); it.by = p.bearb || '';
+  p.updatedAt = nowIso();
+}
+function refreshChips(){ renderSide(); }
+
+function setStatus(id, s){
+  const p = proj(); const it = item(p, id);
+  if(it.status === s) return;
+  it.status = s; stamp(p, id);
+  const ch = allChecks(p).find(x => x.id === id);
+  touch(p, `${STATUS[s]}: ${ch ? ch.t : id}`);
+  persist();
+  // nur die betroffene Zeile und die Zähler auffrischen
+  if(itemNeuZeichnen(p, id)){
+    zaehlerAuffrischen(p, ch ? ch.g : null);
+    renderSide();
+  } else {
+    renderProject();
+  }
+}
+
+/* ---- Projektaktionen ---- */
+function projectAction(a){
+  const p = proj();
+  if(a === 'uebersicht'){ cur = null; render(true); return; }
+  if(a === 'edit')    return openProjectDialog(p);
+  if(a === 'print')   return window.print();
+  if(a === 'archive') return exportProject(p);
+  if(a === 'reopen'){ p.status = 'offen'; touch(p,'Projekt wieder geöffnet'); persist(); render(); return; }
+  if(a === 'delete'){
+    if(confirm(`Projekt „${p.pj || p.name}“ endgültig löschen? Sichere es vorher als Archiv.`)){
+      DB.projects = DB.projects.filter(x => x.id !== p.id);
+      cur = null; persist(true); render(); toast('Projekt gelöscht');
+    }
+    return;
+  }
+  if(a === 'close'){
+    const c = counts(p), a2 = alerts(p);
+    const probleme = [];
+    if(c.offen) probleme.push(`${c.offen} Prüfpunkt${c.offen===1?'':'e'} noch offen`);
+    if(c.nach)  probleme.push(`${c.nach} Punkt${c.nach===1?'':'e'} mit Nacharbeit`);
+    const ohneRef = p.docs.filter(d => !d.ref).length;
+    if(ohneRef)  probleme.push(`${ohneRef} Dokument${ohneRef===1?'':'e'} ohne erfasstes Original`);
+    const geaendert = p.docs.filter(d => d.last && !d.last.same).length;
+    if(geaendert) probleme.push(`${geaendert} Dokument${geaendert===1?'':'e'} mit unbestätigter Änderung`);
+    const offeneFu = a2.overdue.length + a2.due.length;
+    if(offeneFu) probleme.push(`${offeneFu} offene Nachkontrolle${offeneFu===1?'':'n'}`);
+    const pr = arbeitenPruefen(p);
+    pr.ergebnisse.forEach(e => {
+      if(e.fehlt) probleme.push(
+        `Arbeitsart «${e.arbeit.t}»: kein passendes Objekt in der Komponentenliste`);
+      e.offen.forEach(o => probleme.push(`«${e.arbeit.t}»: ${o.text} — noch nicht bestätigt`));
+    });
+    if(pr.ohneLaenge.length) probleme.push(
+      `${pr.ohneLaenge.length} Objekte ohne Länge im PTA: ` +
+      pr.ohneLaenge.map(o => o.kennung).join(', '));
+
+    if(!p.komponenten) probleme.push('Komponentenliste aus dem PTA-AM noch nicht eingelesen');
+    else {
+      const ab = abgleich(p);
+      if(ab && ab.fehltImPta.length) probleme.push(
+        `${ab.fehltImPta.length} notierte${ab.fehltImPta.length===1?'s':''} Objekt${ab.fehltImPta.length===1?'':'e'} nicht im PTA angepasst: ` +
+        ab.fehltImPta.map(x => x.kennung).join(', '));
+    }
+
+    if(probleme.length){
+      if(!confirm('Das Projekt ist noch nicht vollständig:\n\n• ' + probleme.join('\n• ') +
+                  '\n\nTrotzdem abschliessen?')) return;
+    }
+    p.status = 'abgeschlossen'; p.closedAt = nowIso();
+    touch(p, 'Projekt abgeschlossen' + (probleme.length ? ' (mit Vorbehalt)' : ''));
+    persist(true); render(); toast('Projekt abgeschlossen');
+  }
+}
+
+/* ---- Dialoge ---- */
+let editId = null;
+function openProjectDialog(p){
+  editId = p ? p.id : null;
+  $('#dlgProjectTitle').textContent = p ? 'Projektangaben bearbeiten' : 'Neues Projekt anlegen';
+  $('#fPj').value = p?.pj || ''; $('#fName').value = p?.name || '';
+  $('#fOrt').value = p?.ort || ''; $('#fModell').value = p?.modell || '';
+  $('#fBearb').value = p?.bearb || (DB.projects[0]?.bearb || '');
+  $('#fQm').value = p?.qm || (DB.projects[0]?.qm || '');
+  $('#fDue').value = p?.due || ''; $('#fOrdner').value = p?.ordner || '';
+  $('#fNotes').value = p?.notes || '';
+  $('#dlgProject').showModal(); $('#fPj').focus();
+}
+function saveProjectDialog(){
+  const f = {
+    pj:$('#fPj').value.trim(), name:$('#fName').value.trim(), ort:$('#fOrt').value.trim(),
+    modell:$('#fModell').value, bearb:$('#fBearb').value.trim(), qm:$('#fQm').value.trim(),
+    due:$('#fDue').value, ordner:$('#fOrdner').value.trim(), notes:$('#fNotes').value.trim()
+  };
+  if(!f.pj && !f.name){ toast('PJ-Nummer oder Bezeichnung erfassen'); return; }
+  if(editId){
+    const p = proj(editId);
+    Object.assign(p, f); touch(p, 'Projektangaben geändert');
+  } else {
+    const p = newProject(f); DB.projects.unshift(p); cur = p.id; tab = 'liste';
+  }
+  persist(true); $('#dlgProject').close(); render();
+}
+function openItemDialog(){
+  $('#fItemTitle').value = ''; $('#fItemHint').value = ''; $('#fItemValue').value = '';
+  $('#fItemScope').value = 'alle';
+  $('#fItemGroup').innerHTML = GROUPS.map(g => `<option value="${g.id}">${esc(g.t)}</option>`).join('');
+  $('#dlgItem').showModal(); $('#fItemTitle').focus();
+}
+
+function saveItemDialog(){
+  const titel = $('#fItemTitle').value.trim();
+  if(!titel){ toast('Bitte den Prüfpunkt benennen'); return; }
+  const p = proj();
+  const dauerhaft = $('#fItemScope').value === 'alle';
+  const ch = {id:'x'+uid(), g:$('#fItemGroup').value, t:titel,
+              h:$('#fItemHint').value.trim() || undefined, custom:true};
+  if(dauerhaft) ch.global = true;
+  const v = $('#fItemValue').value.trim();
+  if(v) ch.val = {label:v};
+
+  if(dauerhaft){
+    DB.katalog = DB.katalog || [];
+    DB.katalog.push(ch);
+    touch(p, `Eigener Prüfpunkt für alle Projekte: ${titel}`);
+    toast('Punkt gilt ab sofort in allen Projekten');
+  } else {
+    p.extra.push(ch);
+    touch(p, `Eigener Prüfpunkt (nur hier): ${titel}`);
+  }
+  persist(true); $('#dlgItem').close(); renderProject();
+}
+
+/** Entfernt einen eigenen Prüfpunkt — je nach Geltung hier oder überall. */
+function punktLoeschen(id){
+  const p = proj();
+  const eigen = (p.extra || []).find(x => x.id === id);
+  if(eigen){
+    if(!confirm(`Prüfpunkt „${eigen.t}" aus diesem Projekt entfernen?`)) return;
+    p.extra = p.extra.filter(x => x.id !== id);
+    delete p.items[id];
+    touch(p, `Eigener Prüfpunkt entfernt: ${eigen.t}`);
+  } else {
+    const dauerhaft = (DB.katalog || []).find(x => x.id === id);
+    if(!dauerhaft) return;
+    if(!confirm(`Prüfpunkt „${dauerhaft.t}" aus ALLEN Projekten entfernen?\n\n` +
+                'Bereits erfasste Stände und Bemerkungen zu diesem Punkt gehen verloren.')) return;
+    DB.katalog = DB.katalog.filter(x => x.id !== id);
+    DB.projects.forEach(pr => { if(pr.items) delete pr.items[id]; });
+    touch(p, `Eigener Prüfpunkt aus allen Projekten entfernt: ${dauerhaft.t}`);
+  }
+  persist(true); renderProject();
+}
+function saveDocDialog(){
+  const n = $('#fDocName').value.trim();
+  if(!n){ toast('Bitte eine Bezeichnung erfassen'); return; }
+  const p = proj();
+  p.docs.push({id:uid(), name:n, ref:null, revisions:[], last:null});
+  touch(p, `Dokument aufgenommen: ${n}`);
+  persist(true); $('#dlgDoc').close(); renderProject();
+}
+
+/* ---- Dateien einlesen ---- */
+let pending = null;
+function pickFile(spec){
+  pending = spec;
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.onchange = () => { if(inp.files[0]) handleFile(inp.files[0], spec); };
+  inp.click();
+}
+
+async function handleFile(file, spec){
+  const [docId, kind] = spec.split('|');
+  const p = proj(); const dc = p.docs.find(d => d.id === docId);
+  if(!dc) return;
+  if(kind === 'now' && !dc.ref) return;
+
+  // Beim Ersetzen eines bereits geprüften Originals nachfragen
+  if(kind === 'ref' && dc.ref && (dc.last || (dc.revisions || []).length)){
+    if(!confirm(`Das Original von „${dc.name}" ist bereits erfasst und geprüft.\n\n` +
+                'Beim Ersetzen wird das aktuelle Prüfergebnis verworfen. ' +
+                'Der Revisionsverlauf bleibt erhalten.\n\nErsetzen?')) return;
+  }
+
+  toast('Datei wird ausgewertet …');
+  const fd = new FormData();
+  fd.append('datei', file);
+  fd.append('art', kind === 'ref' ? 'original' : 'pruefung');
+  fd.append('projekt', p.pj || p.name || 'projekt');
+  fd.append('dokument', dc.name);
+  if(kind !== 'ref'){
+    fd.append('referenz_hash', dc.ref.hash || '');
+    fd.append('referenz_groesse', String(dc.ref.size || 0));
+    fd.append('referenz_seiten', dc.ref.pages == null ? '' : String(dc.ref.pages));
+    fd.append('referenz_pfad', dc.ref.pfad || '');
+  }
+
+  let res;
+  try{
+    const r = await fetch('api/dokument', {method:'POST', body:fd});
+    if(!r.ok){
+      let grund = 'Fehler ' + r.status;
+      try{
+        const j = await r.json();
+        if(j && j.fehler) grund = j.fehler;
+      }catch(e){}
+      console.error('PTA — Auswertung fehlgeschlagen:', grund);
+      meldungZeigen('Auswertung fehlgeschlagen', grund);
+      return;
+    }
+    res = await r.json();
+  }catch(err){
+    console.error('PTA — kein Kontakt zum Programm:', err);
+    letzteSicherung = false; setStorageBadge();
+    meldungZeigen('Kein Kontakt zum Programm',
+      'Die Seite erreicht das Programm nicht mehr. Meist wurde es beendet oder neu ' +
+      'gestartet. Schliesse dieses Fenster und starte PTA Inventarisierung nochmals — ' +
+      'gespeicherte Projekte bleiben erhalten.');
+    return;
+  }
+
+  const rec = res.datensatz;
+  rec.lastModified = file.lastModified || null;
+
+  if(kind === 'ref'){
+    const vorher = dc.ref;
+    dc.ref = rec; dc.last = null;
+    touch(p, vorher ? `Original ersetzt — ${dc.name}: ${rec.name} (vorher ${vorher.name})`
+                    : `Original erfasst — ${dc.name}: ${rec.name}`);
+    toast(vorher ? 'Original ersetzt — bisheriges Prüfergebnis verworfen'
+                 : (rec.textOk ? 'Original erfasst, Text lesbar' : 'Original erfasst (Fingerabdruck)'));
+  } else {
+    const v = res.vergleich;
+    dc.last = v;
+    // vollständigen Datensatz behalten, damit sich diese Fassung später
+    // ohne erneutes Einlesen als Original übernehmen lässt
+    dc.revisions.unshift(Object.assign({}, rec, {at:v.at, same:v.same}));
+    if(dc.revisions.length > 30) dc.revisions.length = 30;
+    touch(p, `${dc.name} geprüft: ${v.same ? 'unverändert' : 'verändert'} (${rec.name})`);
+    if(!v.same){
+      const it = item(p, 'c18');
+      if(it.status === 'ok'){
+        it.status = 'nach'; stamp(p, 'c18');
+        touch(p, 'Prüfpunkt „Situationen angepasst" wegen Dokumentänderung auf Nacharbeit zurückgesetzt');
+      }
+    }
+    toast(v.same ? 'Unverändert' : 'Änderung erkannt');
+  }
+  persist(true); renderProject();
+}
+
+/** Komponentenliste einlesen; eine frühere Ausgabe wird mitverglichen. */
+async function xmlEinlesen(file){
+  const p = proj();
+  if(!file) return;
+  toast('Komponentenliste wird gelesen …');
+  const fd = new FormData();
+  fd.append('datei', file);
+  fd.append('projekt', p.pj || p.name || 'projekt');
+  if(p.komponenten) fd.append('vorher', JSON.stringify({objekte: p.komponenten.objekte}));
+
+  let res;
+  try{
+    const r = await fetch('api/komponenten', {method:'POST', body:fd});
+    if(!r.ok){
+      let grund = 'Fehler ' + r.status;
+      try{ const j = await r.json(); if(j && j.fehler) grund = j.fehler; }catch(e){}
+      meldungZeigen('Komponentenliste konnte nicht gelesen werden', grund);
+      return;
+    }
+    res = await r.json();
+  }catch(err){
+    meldungZeigen('Kein Kontakt zum Programm',
+      'Die Liste liess sich nicht übermitteln. Läuft das Programm noch?');
+    return;
+  }
+
+  const bisher = p.komponenten ? (p.komponenten.erledigt || []) : [];
+  p.komponenten = res.liste;
+  p.komponenten.vergleich = res.vergleich || null;
+  // schon abgehakte Objekte bleiben abgehakt, sofern sie noch vorkommen
+  const vorhanden = new Set(res.liste.objekte.map(o => o.kennung));
+  p.komponenten.erledigt = bisher.filter(x => vorhanden.has(x));
+  // was das PTA selbst nicht mehr als «zu ändern» führt, gilt als erledigt
+  res.liste.objekte.forEach(o => {
+    if(!o.zuTun && p.komponenten.erledigt.includes(o.kennung))
+      p.komponenten.erledigt = p.komponenten.erledigt.filter(x => x !== o.kennung);
+  });
+
+  const offen = res.liste.objekte.filter(o => o.zuTun && !p.komponenten.erledigt.includes(o.kennung));
+  touch(p, `Komponentenliste eingelesen — ${res.liste.anzahlZuTun} Aufträge, ${offen.length} offen`);
+  toast(offen.length ? `${offen.length} Anpassungen noch offen` : 'Alle Anpassungen erledigt');
+  persist(true); renderProject();
+}
+
+/** Objektkennung zu einer geänderten Planstelle festhalten. */
+function komObjektSetzen(spec, wert){
+  const [docId, seite, nr] = spec.split('|');
+  const p = proj(); const dc = p.docs.find(d => d.id === docId);
+  if(!dc || !dc.last) return;
+  dc.last.objekte = dc.last.objekte || {};
+  const schluessel = `${seite}:${nr}`;
+  if(wert.trim()) dc.last.objekte[schluessel] = wert.trim().toUpperCase().replace(/\s+/g, ' ');
+  else delete dc.last.objekte[schluessel];
+  persist();
+}
+
+function komHaken(kennung, gesetzt){
+  const p = proj();
+  if(!p.komponenten) return;
+  p.komponenten.erledigt = p.komponenten.erledigt || [];
+  p.komponenten.erledigt = gesetzt
+    ? p.komponenten.erledigt.concat(p.komponenten.erledigt.includes(kennung) ? [] : [kennung])
+    : p.komponenten.erledigt.filter(x => x !== kennung);
+  persist(); renderProject();
+}
+
+function xmlEntfernen(){
+  const p = proj();
+  if(!p.komponenten) return;
+  if(!confirm('Die eingelesene Komponentenliste entfernen?\n\n' +
+              'Die Häkchen gehen dabei verloren. Die Kopie im Datenordner bleibt liegen.')) return;
+  p.komponenten = null;
+  touch(p, 'Komponentenliste entfernt');
+  persist(true); renderProject();
+}
+
+async function ordnerOeffnen(pfad){
+  try{
+    const r = await fetch('api/ordner', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pfad: pfad || ''})
+    });
+    if(!r.ok) throw 0;
+  }catch(e){ toast('Ordner konnte nicht geöffnet werden'); }
+}
+
+const ANSICHTEN = [
+  {id:'app', titel:'Programmfenster (Vorgabe)',
+   text:'Eigenes Fenster ohne Adressfeld über Microsoft Edge. Alle Fähigkeiten ' +
+        'bleiben erhalten, besonders das Hineinziehen von Dateien aus dem Explorer.'},
+  {id:'fenster', titel:'Eigenständiges Fenster',
+   text:'Ein echtes Programmfenster ohne jeden Browserbezug — kein fremdes Symbol ' +
+        'in der Taskleiste. Braucht pywebview. Dateien lassen sich hier je nach ' +
+        'System nicht hineinziehen; der Klick auf das Ablagefeld öffnet aber immer ' +
+        'den Dateidialog.'},
+  {id:'browser', titel:'Normaler Browser',
+   text:'Öffnet die Oberfläche als gewöhnlichen Tab im Standardbrowser.'}
+];
+let ansichtStand = null;
+
+async function ansichtOeffnen(){
+  const box = $('#ansichtWahl');
+  box.innerHTML = '<div class="hint">wird geladen …</div>';
+  $('#updateStand').innerHTML = '';
+  $('#dlgAnsicht').showModal();
+  try{
+    const r = await fetch('api/einstellungen');
+    if(r.status === 404 || r.status === 405){
+      box.innerHTML = `<div class="hint" style="font-size:13.5px;line-height:1.6">
+        <b style="color:var(--ink)">Das laufende Programm kennt diese Einstellung noch nicht.</b><br><br>
+        Die Oberfläche gehört zu Fassung ${esc(OBERFLAECHE_FASSUNG)}, die Programmdateien
+        sind älter. Ersetze den ganzen Ordner »pta« aus dem Archiv — nicht nur
+        index.html — und starte neu. Verwendest du die Programmdatei, baue sie mit
+        build.bat neu.<br><br>
+        Bis dahin lässt sich die Ansicht über die Befehlszeile wählen:
+        <span style="font-family:var(--mono);font-size:12.5px">python -m pta --browser</span>
+      </div>`;
+      return;
+    }
+    if(!r.ok) throw new Error('Fehler ' + r.status);
+    ansichtStand = await r.json();
+  }catch(e){
+    box.innerHTML = `<div class="hint">Die Einstellungen sind gerade nicht erreichbar
+      (${esc(e.message || 'kein Kontakt zum Programm')}).</div>`;
+    return;
+  }
+  ansichtZeichnen();
+  $('#fRepo').value = ansichtStand.update_repo || '';
+  $('#fUpdatePruefen').checked = ansichtStand.update_pruefen !== false;
+  updateStandZeigen(ansichtStand.update_stand);
+}
+
+function updateStandZeigen(s){
+  const box = $('#updateStand');
+  if(!box) return;
+  if(!s || !Object.keys(s).length){
+    box.innerHTML = '<div class="hint">Noch nicht nachgesehen.</div>'; return;
+  }
+  if(!s.ok){
+    box.innerHTML = `<div class="hint">${esc(s.grund || 'Prüfung nicht möglich.')}</div>`; return;
+  }
+  box.innerHTML = s.neuer
+    ? `<div class="alert" style="margin:0"><h4>Fassung ${esc(s.fassung)} liegt bereit</h4>
+         <ul><li>Deine Fassung: ${esc(s.eigene || OBERFLAECHE_FASSUNG)}
+         ${s.veroeffentlicht ? ' · veröffentlicht ' + fmtDate(s.veroeffentlicht) : ''}</li></ul></div>`
+    : `<div class="hint">Aktuell — installiert ist ${esc(s.eigene || OBERFLAECHE_FASSUNG)},
+       auf GitHub liegt ${esc(s.fassung || '—')}.</div>`;
+}
+
+async function einstellungenSpeichern(){
+  const werte = {
+    update_repo: $('#fRepo').value.trim(),
+    update_pruefen: $('#fUpdatePruefen').checked,
+  };
+  try{
+    const r = await fetch('api/einstellungen', {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(werte)});
+    ansichtStand = Object.assign({}, ansichtStand, await r.json());
+    toast('Einstellungen gespeichert');
+    $('#dlgAnsicht').close();
+  }catch(e){ toast('Speichern nicht möglich'); }
+}
+
+async function updateJetzt(){
+  $('#updateStand').innerHTML = '<div class="hint">wird geprüft …</div>';
+  try{
+    await fetch('api/einstellungen', {method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({update_repo: $('#fRepo').value.trim()})});
+    const r = await fetch('api/update?jetzt=1');
+    const s = await r.json();
+    updateStandZeigen(s);
+    if(s.ok && s.neuer) updateHinweis(s);
+  }catch(e){
+    $('#updateStand').innerHTML = '<div class="hint">Prüfung nicht möglich.</div>';
+  }
+}
+
+/** Meldung, wenn eine neuere Fassung bereitliegt. */
+function updateHinweis(s){
+  let text = `Auf GitHub liegt die Fassung ${s.fassung} bereit — installiert ist ` +
+             `${s.eigene || OBERFLAECHE_FASSUNG}.`;
+  if(s.veroeffentlicht) text += ` Veröffentlicht am ${fmtDate(s.veroeffentlicht)}.`;
+  if(s.hinweise) text += '\n\n' + s.hinweise.slice(0, 600);
+  text += '\n\nZum Aktualisieren die neue Programmdatei herunterladen und die bisherige ' +
+          'ersetzen. Der Ordner »daten« bleibt unberührt, deine Projekte bleiben erhalten.';
+  meldungZeigen(`Neue Fassung ${s.fassung} verfügbar`, text, [
+    s.datei ? {text:'Programmdatei herunterladen', url:s.datei} : null,
+    {text:'Auf GitHub ansehen', url:s.seite},
+  ].filter(Boolean));
+}
+
+async function updatePruefen(){
+  try{
+    const r = await fetch('api/update');
+    if(!r.ok) return;
+    const s = await r.json();
+    if(s.ok && s.neuer && DB.updateGezeigt !== s.fassung){
+      DB.updateGezeigt = s.fassung; persist();
+      updateHinweis(s);
+    }
+  }catch(e){ /* ohne Internet einfach nichts */ }
+}
+
+function ansichtZeichnen(){
+  const s = ansichtStand || {};
+  $('#ansichtWahl').innerHTML = ANSICHTEN.map(a => {
+    const aus = a.id === 'fenster' && !s.fenster_moeglich;
+    return `<label class="wahl ${s.ansicht===a.id?'on':''} ${aus?'aus':''}"
+              data-ansicht="${a.id}" ${aus?'title="pywebview ist nicht installiert"':''}>
+      <b>${esc(a.titel)}</b><span>${esc(a.text)}${aus?' — derzeit nicht verfügbar, nachrüsten mit: pip install pywebview':''}</span>
+    </label>`;
+  }).join('');
+}
+
+async function ansichtSetzen(wert){
+  const feld = document.querySelector(`[data-ansicht="${wert}"]`);
+  if(feld && feld.classList.contains('aus')) return;
+  try{
+    const r = await fetch('api/einstellungen', {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ansicht: wert})
+    });
+    const neu = await r.json();
+    ansichtStand = Object.assign({}, ansichtStand, neu);
+    ansichtZeichnen();
+    toast('Gespeichert — gilt ab dem nächsten Start');
+  }catch(e){ toast('Einstellung konnte nicht gespeichert werden'); }
+}
+
+/** Markierungsbild bildschirmfüllend anzeigen. */
+function bildGross(name){
+  let box = document.getElementById('lupe');
+  if(!box){
+    box = document.createElement('dialog');
+    box.id = 'lupe';
+    box.style.cssText = 'max-width:96vw;width:96vw;padding:0;border:0;background:#fff';
+    box.addEventListener('click', () => box.close());
+    document.body.appendChild(box);
+  }
+  box.innerHTML = `<img src="api/vergleichsbild/${esc(name)}" alt="Geänderte Stellen"
+       style="width:100%;display:block;cursor:zoom-out">`;
+  box.showModal();
+}
+
+/** Ausführliche Meldung, die stehen bleibt bis sie weggeklickt wird. */
+function meldungZeigen(titel, text, verweise){
+  let box = document.getElementById('meldung');
+  if(!box){
+    box = document.createElement('dialog');
+    box.id = 'meldung';
+    document.body.appendChild(box);
+  }
+  const knoepfe = (verweise || []).map(v =>
+    `<a class="btn" href="${esc(v.url)}" target="_blank" rel="noopener"
+        style="text-decoration:none">${esc(v.text)}</a>`).join('');
+  box.innerHTML = `<h3>${esc(titel)}</h3>
+    <div class="dlg-body"><div class="full hint"
+         style="font-size:13.5px;line-height:1.6;color:var(--ink2);white-space:pre-wrap">${esc(text)}</div></div>
+    <div class="dlg-foot">${knoepfe}
+      <button class="btn p" id="meldungZu">Verstanden</button></div>`;
+  box.querySelector('#meldungZu').onclick = () => box.close();
+  box.showModal();
+}
+
+/** Lebenszeichen: solange dieses Fenster offen ist, läuft das Programm.
+ *  Bleibt es aus, beendet sich der Dienst nach drei Minuten von selbst. */
+function lebenszeichen(){
+  const senden = () => fetch('api/lebt', {method:'POST', keepalive:true}).catch(()=>{});
+  senden();
+  setInterval(senden, 20000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) senden(); });
+}
+
+/** Passen Oberfläche und Programmdateien zusammen? */
+function fassungPruefen(){
+  const dienst = DIENST_FASSUNG;
+  const veraltet = dienst === '__' + 'FASSUNG__';       // Platzhalter blieb stehen
+  if(!veraltet && dienst === OBERFLAECHE_FASSUNG) return true;
+  meldungZeigen('Oberfläche und Programm passen nicht zusammen',
+    `Diese Oberfläche gehört zu Fassung ${OBERFLAECHE_FASSUNG}, das laufende Programm ` +
+    (veraltet ? 'ist älter als 1.5.1' : `meldet Fassung ${dienst}`) + '. ' +
+    'Deshalb fehlen möglicherweise Funktionen wie die Einstellung der Ansicht. ' +
+    'Ersetze den ganzen Ordner »pta« aus dem Archiv, nicht nur index.html — ' +
+    'und baue die Programmdatei mit build.bat neu, falls du sie verwendest.');
+  return false;
+}
+
+/** Alles, was heute oder früher fällig ist — über alle Projekte. */
+function heuteFaellig(){
+  const liste = [];
+  DB.projects.forEach(p => {
+    if(p.status === 'abgeschlossen') return;
+    allChecks(p).forEach(ch => {
+      const it = p.items[ch.id] || {};
+      if(!it.followUp || it.followUpDone) return;
+      const d = daysTo(it.followUp);
+      if(d !== null && d <= 0) liste.push({p, ch, datum:it.followUp, d});
+    });
+  });
+  return liste.sort((a, b) => a.datum.localeCompare(b.datum));
+}
+
+/** Einmal pro Tag an fällige Nachkontrollen erinnern. */
+function erinnerungZeigen(erzwingen){
+  const faellig = heuteFaellig();
+  if(!faellig.length) return;
+  if(!erzwingen && DB.erinnertAm === today()) return;
+  DB.erinnertAm = today();
+  persist();
+
+  const heute = faellig.filter(x => x.d === 0);
+  const alt = faellig.filter(x => x.d < 0);
+  let text = '';
+  if(heute.length) text += 'Heute fällig:\n' +
+    heute.map(x => `• ${x.p.pj || x.p.name} — ${x.ch.t}`).join('\n') + '\n\n';
+  if(alt.length) text += 'Überfällig:\n' +
+    alt.map(x => `• ${x.p.pj || x.p.name} — ${x.ch.t} (seit ${Math.abs(x.d)} Tagen)`).join('\n');
+  meldungZeigen(`Nachkontrolle fällig (${faellig.length})`, text.trim());
+
+  // zusätzlich eine Windows-Benachrichtigung, wenn erlaubt
+  try{
+    if('Notification' in window && Notification.permission === 'granted'){
+      new Notification('PTA Inventarisierung', {
+        body: `${faellig.length} Nachkontrolle${faellig.length===1?'':'n'} fällig`,
+        icon: 'icon-192.png', tag: 'pta-nachkontrolle'});
+    }
+  }catch(e){}
+}
+
+/** Läuft das Programm über Nacht, wird am nächsten Tag erneut erinnert. */
+function erinnerungUeberwachen(){
+  setInterval(() => erinnerungZeigen(false), 30 * 60 * 1000);
+}
+
+/** Beim Start prüfen, ob der Datenordner beschreibbar ist. */
+async function selbsttest(){
+  try{
+    const r = await fetch('api/selbsttest');
+    if(!r.ok) return;
+    const s = await r.json();
+    if(!s.ok){
+      meldungZeigen('Der Datenordner lässt sich nicht beschreiben',
+        s.probleme.join('  •  ') +
+        '  —  Häufigste Gründe: das Programm liegt in C:\\Programme oder direkt im ' +
+        'Downloads-Ordner, oder ein Virenschutz sperrt den Zugriff. Verschiebe den ' +
+        'Ordner nach C:\\PTA und starte neu.');
+    }
+  }catch(e){ /* Selbsttest ist freiwillig */ }
+}
+
+/* ---------- Einzelne Fundstellen ausblenden ---------- */
+function stelleAus(l, seite, nr){
+  return !!(l && l.aus && l.aus.includes(`${seite}:${nr}`));
+}
+
+function stelleAusblenden(spec){
+  const [docId, seite, nr] = spec.split('|');
+  const p = proj(); const dc = p.docs.find(d => d.id === docId);
+  if(!dc || !dc.last) return;
+  dc.last.aus = dc.last.aus || [];
+  const schluessel = `${seite}:${nr}`;
+  if(!dc.last.aus.includes(schluessel)) dc.last.aus.push(schluessel);
+  touch(p, `Stelle ${nr} auf Seite ${seite} als nicht relevant ausgeblendet — ${dc.name}`);
+  persist(); renderProject();
+}
+
+function stellenWiederZeigen(docId){
+  const p = proj(); const dc = p.docs.find(d => d.id === docId);
+  if(!dc || !dc.last) return;
+  dc.last.aus = [];
+  touch(p, `Ausgeblendete Stellen wieder eingeblendet — ${dc.name}`);
+  persist(); renderProject();
+}
+
+/** Den zuletzt geprüften Stand zum neuen Original erklären. */
+function acceptAsRef(docId){
+  const p = proj(); const dc = p.docs.find(d => d.id === docId);
+  if(!dc || !dc.last || !dc.revisions.length) return;
+  const rv = dc.revisions[0];
+  if(!confirm(`Den geprüften Stand von „${dc.name}" als neues Original übernehmen?\n\n` +
+              `Künftige Prüfungen vergleichen dann gegen „${rv.name}".`)) return;
+  // vollständiger Datensatz der geprüften Fassung — kein erneutes Einlesen nötig
+  dc.ref = Object.assign({}, rv, {at:nowIso(), same:undefined});
+  delete dc.ref.same;
+  dc.last = null;
+  touch(p, `Neues Original übernommen — ${dc.name}: ${rv.name}`);
+  toast('Übernommen — künftige Prüfungen vergleichen gegen diesen Stand');
+  persist(true); renderProject();
+}
+
+/** Das erfasste Original samt Prüfstand löschen — das Dokument bleibt bestehen. */
+function originalEntfernen(docId){
+  const p = proj(); const dc = p.docs.find(d => d.id === docId);
+  if(!dc || !dc.ref) return;
+  if(!confirm(`Das erfasste Original von „${dc.name}" entfernen?\n\n` +
+              'Fingerabdruck, Prüfergebnis und Revisionsverlauf werden gelöscht. ' +
+              'Die Dateikopien im Datenordner bleiben liegen.')) return;
+  dc.ref = null; dc.last = null; dc.revisions = [];
+  touch(p, `Original entfernt — ${dc.name}`);
+  toast('Original entfernt — Dokument steht wieder leer bereit');
+  persist(true); renderProject();
+}
+
+/** Das Prüfergebnis verwerfen und erneut prüfen können. */
+function pruefungVerwerfen(docId){
+  const p = proj(); const dc = p.docs.find(d => d.id === docId);
+  if(!dc || !dc.last) return;
+  if(!confirm(`Das Prüfergebnis von „${dc.name}" verwerfen?\n\n` +
+              'Das Original bleibt unverändert, der Revisionsverlauf ebenfalls.')) return;
+  dc.last = null;
+  touch(p, `Prüfergebnis verworfen — ${dc.name}`);
+  persist(true); renderProject();
+}
+
+/* Gruppen der Prüfliste per Ziehen umordnen */
+let gezogeneGruppe = null;
+document.addEventListener('dragstart', e => {
+  const kopf = e.target.closest && e.target.closest('[data-ghead]');
+  if(!kopf) return;
+  gezogeneGruppe = kopf.dataset.ghead;
+  kopf.closest('.group').classList.add('zieht');
+  e.dataTransfer.effectAllowed = 'move';
+  try{ e.dataTransfer.setData('text/plain', gezogeneGruppe); }catch(err){}
+});
+document.addEventListener('dragend', () => {
+  gezogeneGruppe = null;
+  document.querySelectorAll('.group').forEach(g => g.classList.remove('zieht','ziel'));
+});
+document.addEventListener('dragover', e => {
+  if(!gezogeneGruppe) return;
+  const gruppe = e.target.closest && e.target.closest('.group');
+  if(!gruppe) return;
+  e.preventDefault();
+  document.querySelectorAll('.group').forEach(g => g.classList.remove('ziel'));
+  if(gruppe.dataset.gruppe !== gezogeneGruppe) gruppe.classList.add('ziel');
+});
+document.addEventListener('drop', e => {
+  if(!gezogeneGruppe) return;
+  const gruppe = e.target.closest && e.target.closest('.group');
+  if(!gruppe) return;
+  e.preventDefault();
+  const ziel = gruppe.dataset.gruppe;
+  const gezogen = gezogeneGruppe;
+  gezogeneGruppe = null;
+  document.querySelectorAll('.group').forEach(g => g.classList.remove('zieht','ziel'));
+  gruppeAblegen(gezogen, ziel);
+});
+
+/* Datei per Ziehen und Ablegen */
+/* Komponentenliste per Ziehen ablegen */
+['dragover','dragleave','drop'].forEach(ev => {
+  document.addEventListener(ev, e => {
+    const z = e.target.closest && e.target.closest('[data-xml]');
+    if(!z) return;
+    e.preventDefault();
+    if(ev === 'dragover') z.classList.add('on');
+    if(ev === 'dragleave') z.classList.remove('on');
+    if(ev === 'drop'){
+      z.classList.remove('on');
+      const f = e.dataTransfer.files[0];
+      if(f) xmlEinlesen(f);
+    }
+  });
+});
+
+['dragover','dragleave','drop'].forEach(ev => {
+  document.addEventListener(ev, e => {
+    const z = e.target.closest && e.target.closest('[data-drop]');
+    if(!z) return;
+    e.preventDefault();
+    if(ev === 'dragover') z.classList.add('on');
+    if(ev === 'dragleave') z.classList.remove('on');
+    if(ev === 'drop'){
+      z.classList.remove('on');
+      const f = e.dataTransfer.files[0];
+      if(f) handleFile(f, z.dataset.drop);
+    }
+  });
+});
+document.addEventListener('dragover', e => { if(e.target.closest('[data-drop]')) e.preventDefault(); });
+
+/* ============================================================
+   10 — Archiv sichern und laden
+   ============================================================ */
+function download(name, obj){
+  const blob = new Blob([JSON.stringify(obj, null, 1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+}
+function slug(s){ return (s||'projekt').replace(/[^\w\-. äöüÄÖÜ]/g,'').trim().replace(/\s+/g,'_'); }
+
+function exportProject(p){
+  download(`PTA_${slug(p.pj || p.name)}_${today()}.json`,
+    {type:'pta-projekt', v:1, exported:nowIso(), project:p, katalog:DB.katalog || []});
+  touch(p, 'Archiv gesichert'); persist();
+  toast('Archivdatei erstellt — im Projektordner ablegen');
+}
+function backupAll(){
+  if(!DB.projects.length){ toast('Noch keine Projekte vorhanden'); return; }
+  download(`PTA_Gesamtsicherung_${today()}.json`,
+    {type:'pta-sicherung', v:1, exported:nowIso(), projects:DB.projects, katalog:DB.katalog || []});
+  toast('Gesamtsicherung erstellt');
+}
+
+$('#fileImport').addEventListener('change', async e => {
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const data = JSON.parse(await f.text());
+    const incoming = data.projects || (data.project ? [data.project] : []);
+    if(!incoming.length) throw 0;
+    let neu = 0, ers = 0, punkte = 0;
+    // eigene Prüfpunkte aus der Sicherung übernehmen, sofern noch unbekannt
+    DB.katalog = DB.katalog || [];
+    (data.katalog || []).forEach(k => {
+      if(k && k.id && !DB.katalog.some(x => x.id === k.id)){ DB.katalog.push(k); punkte++; }
+    });
+    incoming.forEach(p => {
+      if(!p || !p.id) return;
+      p.extra = p.extra || []; p.docs = p.docs || []; p.log = p.log || []; p.items = p.items || {};
+      const i = DB.projects.findIndex(x => x.id === p.id);
+      if(i >= 0){
+        if(confirm(`„${p.pj || p.name}“ ist bereits vorhanden. Mit der Archivfassung ersetzen?`)){ DB.projects[i] = p; ers++; }
+      } else { DB.projects.unshift(p); neu++; }
+    });
+    persist(true); render(true);
+    toast(`${neu} neu geladen, ${ers} ersetzt` + (punkte ? `, ${punkte} eigene Prüfpunkte übernommen` : ''));
+  }catch(err){ toast('Datei konnte nicht gelesen werden'); }
+  e.target.value = '';
+});
+
+/* ============================================================
+   11 — Start
+   ============================================================ */
+(async function init(){
+  await Store.init();
+  // Zuerst prüfen, ob die Programmdateien zur Oberfläche passen — das geht ohne
+  // Netzzugriff und erklärt sonst folgende Fehler gleich mit.
+  const passt = fassungPruefen();
+
+  let d = null;
+  try{
+    d = await Store.load();
+  }catch(err){
+    document.querySelector('main').innerHTML =
+      '<div class="empty"><h2>Kein Kontakt zum Programm</h2>' +
+      '<p>Die Oberfläche erreicht den lokalen Dienst nicht. Starte «PTA Inventarisierung» ' +
+      'nochmals und öffne die Seite über das Programmfenster.</p></div>';
+    letzteSicherung = false; setStorageBadge();
+    return;
+  }
+  if(d && d.projects) DB = d;
+  DB.katalog = DB.katalog || [];
+  DB.gruppen = DB.gruppen || {reihenfolge:[], zu:[]};
+  arbeitsarten();
+  DB.projects.forEach(p => {
+    p.extra = p.extra || []; p.docs = p.docs || [];
+    p.log = p.log || []; p.items = p.items || {};
+  });
+  render();
+  lebenszeichen();
+  if(passt){
+    selbsttest();
+    updatePruefen();
+  }
+  erinnerungZeigen(false);
+  erinnerungUeberwachen();
+  try{
+    if('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

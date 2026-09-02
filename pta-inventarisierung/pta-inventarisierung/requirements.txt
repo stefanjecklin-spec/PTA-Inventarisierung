@@ -1,0 +1,8 @@
+flask>=3.0
+waitress>=3.0
+pypdf>=5.0
+pypdfium2>=4.30
+pillow>=10.0
+
+# Freiwillig: echtes Fenster ganz ohne Browserprozess (python -m pta --fenster)
+# pywebview>=5.0
